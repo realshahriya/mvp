@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo.png",
   },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   openGraph: {
     title: "CENCERA - Universal Trust Score Layer",
     description: "The Universal Trust Score Layer. We analyze on-chain and off-chain data to generate real-time reputation scores for wallets, contracts, and tokens.",
@@ -48,7 +50,9 @@ export default function RootLayout({
         <WalletProvider>
           {/* Global Sidebar */}
           <div className="flex w-full">
-            <Sidebar />
+            <Suspense fallback={<div className="hidden md:block md:w-64" />}>
+              <Sidebar />
+            </Suspense>
             <main className="flex-1 md:ml-64 flex flex-col min-h-screen relative overflow-hidden">
               {children}
             </main>
