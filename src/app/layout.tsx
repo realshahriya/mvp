@@ -4,7 +4,6 @@ import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { WalletProvider } from "@/components/WalletProvider";
-import { BackgroundMotion } from "@/components/BackgroundMotion";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -40,13 +39,7 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${jetbrainsMono.variable} antialiased text-zinc-100 flex min-h-screen font-sans selection:bg-neon selection:text-black`}
       >
-        <div className="fixed-background">
-          <div className="eyes-overlay">
-            <span className="eye left" />
-            <span className="eye right" />
-          </div>
-        </div>
-        <BackgroundMotion />
+        <div className="fixed-background" />
         <WalletProvider>
           {/* Global Sidebar */}
           <div className="flex w-full">
