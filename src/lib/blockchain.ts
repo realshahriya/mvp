@@ -52,22 +52,7 @@ const ERC20_ABI = [
 ] as const;
 
 export async function fetchChainData(input: string, chainId: string = '1'): Promise<ChainData | null> {
-    // 0. Handle Non-EVM Chains (Mock Data)
-    const MOCK_CHAINS = ['solana', 'sui', 'aptos', 'ton'];
-    if (MOCK_CHAINS.includes(chainId)) {
-        // Return realistic mock data to avoid adding heavy SDKs for prototype
-        await new Promise(r => setTimeout(r, 1500)); // Simulate latency
-
-        return {
-            address: input,
-            ensName: null,
-            balance: (Math.random() * 100).toFixed(4),
-            txCount: Math.floor(Math.random() * 5000),
-            isContract: false, // Assume user wallet for now
-            codeSize: 0,
-            tokenMetadata: undefined
-        };
-    }
+    if (!/^\d+$/.test(String(chainId))) return null;
 
     const client = getClient(chainId);
     let address = input;

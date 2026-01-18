@@ -42,13 +42,54 @@ const COINGECKO_IDS: Record<string, string> = {
     '56': 'binancecoin',
     '137': 'matic-network',
     '43114': 'avalanche-2',
-    '250': 'fantom'
+    '250': 'fantom',
+    '324': 'ethereum',
+    '30': 'rootstock-smart-bitcoin',
+    'bitcoin': 'bitcoin',
+    'solana': 'solana',
+    'sui': 'sui',
+    'aptos': 'aptos',
+    'ton': 'toncoin',
+    'stacks': 'stacks'
+};
+
+const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
+    ETH: 'ethereum',
+    BNB: 'binancecoin',
+    MATIC: 'matic-network',
+    POL: 'polygon-ecosystem-token',
+    AVAX: 'avalanche-2',
+    FTM: 'fantom',
+    BTC: 'bitcoin',
+    RBTC: 'rootstock-smart-bitcoin',
+    SOL: 'solana',
+    SUI: 'sui',
+    APT: 'aptos',
+    TON: 'toncoin',
+    STX: 'stacks',
 };
 
 const nativeCache: Record<string, { price: number; ts: number }> = {};
 
-export async function getNativePrice(chainId: string): Promise<number> {
-    const id = COINGECKO_IDS[chainId] || 'ethereum';
+async function tryCryptoComparePriceUsd(symbol: string): Promise<number | null> {
+    const sym = String(symbol).trim().toUpperCase();
+    if (!sym) return null;
+    const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${encodeURIComponent(sym)}&tsyms=USD`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as unknown;
+    if (!data || typeof data !== 'object') return null;
+    const usd = (data as Record<string, unknown>).USD;
+    const priceNum = typeof usd === 'number' ? usd : typeof usd === 'string' ? Number(usd) : NaN;
+    if (!Number.isFinite(priceNum) || priceNum <= 0) return null;
+    return priceNum;
+}
+
+export async function getNativePrice(chainId: string, nativeSymbol?: string): Promise<number> {
+    const fromChain = COINGECKO_IDS[chainId];
+    const sym = nativeSymbol ? String(nativeSymbol).trim().toUpperCase() : '';
+    const fromSymbol = sym ? SYMBOL_TO_COINGECKO_ID[sym] : undefined;
+    const id = fromChain || fromSymbol;
+    if (!id) return 0;
     const entry = nativeCache[id];
     const now = Date.now();
     if (entry && now - entry.ts < CACHE_DURATION) return entry.price;
@@ -68,10 +109,25 @@ export async function getNativePrice(chainId: string): Promise<number> {
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
         if (!res.ok) throw new Error('Failed to fetch price');
         const data = await res.json();
-        const price = data[id]?.usd ?? 0;
-        nativeCache[id] = { price, ts: now };
-        return price || (cachedPrice ?? 2650.0);
+        const price = data[id]?.usd;
+        const priceNum = typeof price === 'number' ? price : Number(price);
+        if (!Number.isFinite(priceNum) || priceNum <= 0) {
+            throw new Error('Invalid price');
+        }
+        nativeCache[id] = { price: priceNum, ts: now };
+        return priceNum;
     } catch {
-        return entry?.price ?? (cachedPrice ?? 2650.0);
+        try {
+            if (sym) {
+                const cc = await tryCryptoComparePriceUsd(sym);
+                if (cc) {
+                    nativeCache[id] = { price: cc, ts: now };
+                    return cc;
+                }
+            }
+        } catch {
+        }
+        if (id === 'ethereum') return entry?.price ?? (cachedPrice ?? 2650.0);
+        return entry?.price ?? 0;
     }
 }

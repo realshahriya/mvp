@@ -26,10 +26,14 @@ export async function GET(request: NextRequest) {
             risk_level: data.label,
             risk_flags: data.risks.map(r => r.title),
             summary: data.summary,
+            ai_text: data.aiText,
             sentiment: data.sentiment,
             market_data: data.marketData ? {
                 portfolio_value_usd: data.marketData.portfolioValueUsd,
-                eth_price: data.marketData.ethPriceUsd
+                eth_price: data.marketData.ethPriceUsd,
+                native_balance: data.nativeBalance,
+                native_symbol: data.nativeSymbol,
+                native_price_usd: data.nativePriceUsd
             } : null,
             generated_at: new Date().toISOString(),
             metadata: {

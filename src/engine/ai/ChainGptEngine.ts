@@ -1,4 +1,6 @@
 import { ChainData } from '@/lib/blockchain';
+import type { AggregatedSearchData } from '@/lib/searchProcessor';
+import { buildChaingptTrustPrompt, parseOrFallbackChaingptTrustResponse } from '@/lib/chaingptTrust';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -85,7 +87,27 @@ export class ChainGptEngine {
     return raw;
   }
 
-  async generateSecurityReport(chainData: ChainData, score: number): Promise<{
+  async generateTrustScoreAndSummaryFromAggregated(input: AggregatedSearchData): Promise<{
+    raw: string;
+    trustScore: number;
+    summary: string;
+  }> {
+    if (!this.apiKey) {
+      throw new Error('Missing CHAINGPT_API_KEY');
+    }
+    const prompt = `IGNORE any prior output format rules. ${buildChaingptTrustPrompt(input)}`;
+    const raw = await this.post(prompt);
+    const fallbackSummary =
+      `AI response could not be parsed. Returning baseline score ${input.signals.baselineScore} derived from on-chain and market signals.`;
+    const parsed = parseOrFallbackChaingptTrustResponse(raw, input.signals.baselineScore, fallbackSummary);
+    return { raw, trustScore: parsed.trustScore, summary: parsed.summary };
+  }
+
+  async generateSecurityReport(
+    chainData: ChainData,
+    score: number,
+    ctx?: { chainName?: string; nativeSymbol?: string }
+  ): Promise<{
     summary: string;
     riskLevel: RiskLevel;
     auditNotes: string[];
@@ -94,18 +116,20 @@ export class ChainGptEngine {
       throw new Error('Missing CHAINGPT_API_KEY');
     }
 
-    const raw = await this.post(this.buildPrompt(chainData, score));
-    let parsed = this.parseResponse(raw, chainData, score);
+    const raw = await this.post(this.buildPrompt(chainData, score, ctx));
+    let parsed = this.parseResponse(raw, chainData, score, ctx);
     if (!parsed) {
-      const strict = `${this.instructions ? this.instructions + "\n" : ""}Output EXACT JSON only, one object, no code fences, no commentary.\n` + this.buildPrompt(chainData, score);
+      const strict =
+        `${this.instructions ? this.instructions + "\n" : ""}Output EXACT JSON only, one object, no code fences, no commentary.\n` +
+        this.buildPrompt(chainData, score, ctx);
       const raw2 = await this.post(strict);
-      parsed = this.parseResponse(raw2, chainData, score);
+      parsed = this.parseResponse(raw2, chainData, score, ctx);
     }
 
     return parsed;
   }
 
-  private buildPrompt(chainData: ChainData, score: number): string {
+  private buildPrompt(chainData: ChainData, score: number, ctx?: { chainName?: string; nativeSymbol?: string }): string {
     const balance = parseFloat(chainData.balance).toFixed(4);
     const txs = chainData.txCount;
     const kind = chainData.tokenMetadata
@@ -114,12 +138,14 @@ export class ChainGptEngine {
       ? 'contract'
       : 'wallet';
     const name = chainData.ensName ?? chainData.address;
+    const chainName = ctx?.chainName ? String(ctx.chainName) : '';
+    const sym = ctx?.nativeSymbol ? String(ctx.nativeSymbol) : 'ETH';
 
     const instruct =
       'Respond strictly as compact JSON with keys: summary (string), riskLevel (one of Critical|High|Medium|Low|Safe), auditNotes (array of strings). No markdown, no extra text.';
 
     const context =
-      `Analyze ${kind} ${name}. Balance ${balance} ETH, txCount ${txs}, isContract ${chainData.isContract}. ` +
+      `Analyze ${kind} ${name}${chainName ? ` on ${chainName}` : ''}. Balance ${balance} ${sym}, txCount ${txs}, isContract ${chainData.isContract}. ` +
       (chainData.tokenMetadata
         ? `Token ${chainData.tokenMetadata.name} (${chainData.tokenMetadata.symbol}), decimals ${chainData.tokenMetadata.decimals}. `
         : '') +
@@ -131,7 +157,8 @@ export class ChainGptEngine {
   private parseResponse(
     raw: string,
     chainData: ChainData,
-    score: number
+    score: number,
+    ctx?: { chainName?: string; nativeSymbol?: string }
   ): { summary: string; riskLevel: RiskLevel; auditNotes: string[] } {
     const obj = this.extractJson(raw);
     if (obj) {
@@ -145,9 +172,10 @@ export class ChainGptEngine {
 
     const fallbackRisk = this.scoreToRisk(score);
     const balance = parseFloat(chainData.balance);
+    const sym = ctx?.nativeSymbol ? String(ctx.nativeSymbol) : 'ETH';
     const summary =
       `AI analysis failed to return JSON. Using fallback classification. ` +
-      `Entity holds ${balance.toFixed(4)} ETH with ${chainData.txCount} transactions.`;
+      `Entity holds ${balance.toFixed(4)} ${sym} with ${chainData.txCount} transactions.`;
     return { summary, riskLevel: fallbackRisk, auditNotes: [] };
   }
 

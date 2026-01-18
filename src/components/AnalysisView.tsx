@@ -9,6 +9,7 @@ import { SocialSentiment } from '@/components/SocialSentiment';
 import { SimulationEngine } from '@/components/SimulationEngine';
 import { Loader2, ShieldAlert, BadgeCheck, Copy, Database, ArrowUpRight, Zap, Clock, Shield, ExternalLink, AlertTriangle, Send, X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { parseChaingptTrustResponse } from '@/lib/chaingptTrust';
 
 const CHAIN_CONFIG: Record<string, { name: string, explorer: string, icon: string }> = {
     "1": { name: "Ethereum Mainnet", explorer: "https://etherscan.io", icon: "Ξ" },
@@ -23,8 +24,21 @@ const CHAIN_CONFIG: Record<string, { name: string, explorer: string, icon: strin
     "solana": { name: "Solana", explorer: "https://solscan.io", icon: "SOL" },
     "sui": { name: "Sui", explorer: "https://suiscan.xyz", icon: "SUI" },
     "aptos": { name: "Aptos", explorer: "https://explorer.aptoslabs.com", icon: "APT" },
-    "ton": { name: "TON", explorer: "https://tonscan.org", icon: "TON" }
+    "ton": { name: "TON", explorer: "https://tonscan.org", icon: "TON" },
+    "bitcoin": { name: "Bitcoin", explorer: "https://mempool.space", icon: "BTC" },
+    "stacks": { name: "Stacks", explorer: "https://explorer.hiro.so", icon: "STX" }
 };
+
+function getExplorerHref(chainId: string, address: string) {
+    const chainInfo = CHAIN_CONFIG[chainId] || CHAIN_CONFIG["1"];
+    if (chainId === 'solana') return `${chainInfo.explorer}/account/${address}`;
+    if (chainId === 'aptos') return `${chainInfo.explorer}/account/${address}?network=mainnet`;
+    if (chainId === 'sui') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'ton') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'bitcoin') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'stacks') return `${chainInfo.explorer}/address/${address}`;
+    return `${chainInfo.explorer}/address/${address}`;
+}
 
 export default function AnalysisView() {
     const searchParams = useSearchParams();
@@ -58,18 +72,22 @@ export default function AnalysisView() {
                 const res = await fetch(`/api/analyze?q=${encodeURIComponent(query)}&chain=${encodeURIComponent(chainId)}`);
                 if (!res.ok) throw new Error('failed');
                 const j = await res.json();
+                const parsed = typeof j.ai_text === 'string' ? parseChaingptTrustResponse(j.ai_text) : null;
                 const d: AnalysisEntityData = {
                     id: j.entity,
                     address: j.address ?? query,
                     type: j.type,
-                    score: j.trust_score,
+                    score: parsed?.trustScore ?? j.trust_score,
                     label: j.risk_level,
-                    summary: j.summary,
+                    summary: parsed?.summary ?? j.summary,
                     risks: (j.risk_flags || []).map((t: string) => ({ type: 'info', title: t, description: '' })),
                     history: [],
                     sentiment: Array.isArray(j.sentiment) ? j.sentiment : [],
                     hypeScore: j.metadata?.social_hype_score,
                     mentionsCount: j.metadata?.social_mentions,
+                    nativeBalance: typeof j.market_data?.native_balance === 'number' ? j.market_data.native_balance : undefined,
+                    nativeSymbol: typeof j.market_data?.native_symbol === 'string' ? j.market_data.native_symbol : undefined,
+                    nativePriceUsd: typeof j.market_data?.native_price_usd === 'number' ? j.market_data.native_price_usd : undefined,
                     marketData: j.market_data
                         ? {
                             ethPriceUsd: j.market_data.eth_price ?? 0,
@@ -334,10 +352,11 @@ export default function AnalysisView() {
                                 <div className="flex items-center justify-between py-2">
                                     <span className="text-zinc-500">Balance</span>
                                     <span className="text-white font-mono font-medium">
-                                        {data.marketData?.portfolioValueUsd
+                                        {typeof data.nativeBalance === 'number' && data.nativeSymbol
+                                            ? `${data.nativeBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${data.nativeSymbol}${data.marketData?.portfolioValueUsd ? ` ($${data.marketData.portfolioValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })})` : ''}`
+                                            : data.marketData?.portfolioValueUsd
                                             ? `$${data.marketData.portfolioValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-                                            : '0.00 ETH'
-                                        }
+                                            : '-'}
                                     </span>
                                 </div>
 
@@ -371,7 +390,7 @@ export default function AnalysisView() {
 
                             <div className="pt-4 mt-auto border-t border-white/5">
                                 <a
-                                    href={`${chainInfo.explorer}/address/${data.id}`}
+                                    href={getExplorerHref(chainId, data.address ?? (data.id.match(/\((.*?)\)/)?.[1] ?? data.id))}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-zinc-400 hover:text-white transition-colors border border-white/5 font-medium group"
@@ -507,7 +526,6 @@ function Badge({ type }: { type: string }) {
 }
 
 function ExplorerLink({ chainId, address }: { chainId: string, address: string }) {
-    const chainInfo = CHAIN_CONFIG[chainId] || CHAIN_CONFIG["1"];
     const match = address.match(/\((.*?)\)/);
     const cleanAddress = match ? match[1] : address;
 
@@ -515,7 +533,7 @@ function ExplorerLink({ chainId, address }: { chainId: string, address: string }
 
     return (
         <a
-            href={`${chainInfo.explorer}/address/${cleanAddress}`}
+            href={getExplorerHref(chainId, cleanAddress)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-zinc-400 hover:text-white transition-colors font-medium group"

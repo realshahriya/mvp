@@ -11,6 +11,7 @@ export interface AnalysisResult {
 export interface ChainEngine {
     chainId: number;
     name: string;
+    nativeSymbol?: string;
 
     // Core Data Fetching
     fetchData(address: string): Promise<ChainData | null>;

@@ -65,6 +65,9 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
         return null;
     };
 
+    const simulatorSupported =
+        /^\d+$/.test(String(chainId ?? '1')) && (getCleanAddress()?.startsWith('0x') ?? false);
+
     const runSimulation = async () => {
         setSimulating(true);
         setResult(null);
@@ -205,7 +208,7 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
                     <Cpu className="w-5 h-5 text-zinc-400" />
                     <h3 className="font-bold text-white text-sm font-sans">Transaction Simulator</h3>
                 </div>
-                {!result && !simulating && (
+                {!result && !simulating && simulatorSupported && (
                     <div className="flex flex-wrap gap-2">
                         <button onClick={() => runQuick('quick_native')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Native Dry-Run</button>
                         {entityType === 'token' && (
@@ -242,22 +245,27 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
                                 Execute a real-time call/estimate on the selected chain to verify logic and gas.
                             </p>
                         </div>
-                        {/* Quick Actions */}
-                        <div className="flex flex-wrap gap-2 justify-center">
-                            <button onClick={() => runQuick('quick_native')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Native Dry-Run</button>
-                            {entityType === 'token' && (
-                                <>
-                                    <button onClick={() => runQuick('quick_erc20_transfer')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">ERC20 Transfer</button>
-                                    <button onClick={() => runQuick('quick_erc20_approve')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">ERC20 Approve</button>
-                                </>
+                            {simulatorSupported ? (
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    <button onClick={() => runQuick('quick_native')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Native Dry-Run</button>
+                                    {entityType === 'token' && (
+                                        <>
+                                            <button onClick={() => runQuick('quick_erc20_transfer')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">ERC20 Transfer</button>
+                                            <button onClick={() => runQuick('quick_erc20_approve')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">ERC20 Approve</button>
+                                        </>
+                                    )}
+                                    {entityType === 'contract' && (
+                                        <>
+                                            <button onClick={() => runQuick('quick_proxy')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Proxy Check</button>
+                                            <button onClick={() => runQuick('quick_paused')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Paused Check</button>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-xs text-zinc-500">
+                                    Simulator is available for EVM (0x…) addresses only.
+                                </div>
                             )}
-                            {entityType === 'contract' && (
-                                <>
-                                    <button onClick={() => runQuick('quick_proxy')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Proxy Check</button>
-                                    <button onClick={() => runQuick('quick_paused')} className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-zinc-200">Paused Check</button>
-                                </>
-                            )}
-                        </div>
                     </div>
                 )}
 

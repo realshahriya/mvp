@@ -13,11 +13,13 @@ const ERC20_ABI = [
 export abstract class BaseEvmEngine implements ChainEngine {
     chainId: number;
     name: string;
+    nativeSymbol?: string;
     protected client;
 
     constructor(chain: Chain, name: string) {
         this.chainId = chain.id;
         this.name = name;
+        this.nativeSymbol = chain.nativeCurrency?.symbol;
         this.client = createPublicClient({
             chain,
             transport: http()

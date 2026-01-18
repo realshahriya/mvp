@@ -8,11 +8,15 @@ export interface EntityData {
     score: number;
     label: 'Safe' | 'Caution' | 'High Risk';
     summary: string;
+    aiText?: string;
     risks: { type: "success" | "warning" | "danger" | "info"; title: string; description: string }[];
     history: ScoreHistoryPoint[]; // For chart
     sentiment: SentimentPoint[]; // For sentiment widget
     hypeScore?: number; // 0-100 (New)
     mentionsCount?: number; // (New)
+    nativeBalance?: number;
+    nativeSymbol?: string;
+    nativePriceUsd?: number;
     marketData?: { // (New)
         ethPriceUsd: number;
         portfolioValueUsd: number;

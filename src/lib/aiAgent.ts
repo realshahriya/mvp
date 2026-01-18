@@ -11,11 +11,12 @@ export interface AIAnalysisResult {
 
 export async function generateSecurityReport(
     chainData: ChainData,
-    score: number
+    score: number,
+    ctx?: { chainName?: string; nativeSymbol?: string }
 ): Promise<AIAnalysisResult> {
     try {
         const engine = getAiEngine();
-        const res = await engine.generateSecurityReport(chainData, score);
+        const res = await engine.generateSecurityReport(chainData, score, ctx);
         return {
             summary: res.summary,
             riskLevel: res.riskLevel,
@@ -26,13 +27,14 @@ export async function generateSecurityReport(
         const tx = chainData.txCount;
         const isContract = chainData.isContract;
         const ens = chainData.ensName;
+        const sym = ctx?.nativeSymbol || 'ETH';
         let riskLevel: AIAnalysisResult["riskLevel"] = "Medium";
         let summary = "";
         const notes: string[] = [];
         if (score >= 80) {
             riskLevel = "Safe";
             summary =
-                `High trust profile. Balance ${balance.toFixed(2)} ETH, transactions ${tx}. ` +
+                `High trust profile. Balance ${balance.toFixed(2)} ${sym}, transactions ${tx}. ` +
                 `${ens ? `Verified identity via ${ens}.` : ""}`;
             notes.push("Long-term holder or established DApp user.");
             notes.push("No mixer interaction detected.");
@@ -40,7 +42,7 @@ export async function generateSecurityReport(
             riskLevel = "Low";
             summary =
                 `Moderate trust profile. Activity ${tx} transactions. ` +
-                `Caution for high-value transfers until more history. Liquidity ${balance.toFixed(4)} ETH.`;
+                `Caution for high-value transfers until more history. Liquidity ${balance.toFixed(4)} ${sym}.`;
             notes.push("Growing transaction volume.");
             notes.push("Clean interactions observed.");
         } else if (score >= 30) {
