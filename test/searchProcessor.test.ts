@@ -8,7 +8,7 @@ import { buildChaingptTrustPrompt } from '../src/lib/chaingptTrust';
 test('computeBaselineSignals returns flags and bounded score', () => {
     const r = computeBaselineSignals({ txCount: 1, balanceNative: 0, isContract: true, isToken: false });
     assert.ok(r.flags.includes('Low Activity'));
-    assert.ok(r.flags.includes('Unverified Contract'));
+    assert.ok(r.flags.includes('Contract Code Detected'));
     assert.ok(r.baselineScore >= 0 && r.baselineScore <= 100);
 });
 

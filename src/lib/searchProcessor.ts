@@ -91,7 +91,7 @@ export function computeBaselineSignals(input: {
             score += 30;
             flags.push('Token Contract');
         } else {
-            flags.push('Unverified Contract');
+            flags.push('Contract Code Detected');
         }
     } else {
         score += 10;

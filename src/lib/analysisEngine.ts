@@ -71,15 +71,35 @@ export async function analyzeEntity(input: string, chainId: string = '1'): Promi
 
     const risks: EntityData['risks'] = [];
     for (const f of enriched.signals.flags) {
+        const normalizedTitle =
+            f === 'Contract Code Detected' ? 'Contract Account' : f;
         const t =
             f === 'Verified Entity'
                 ? 'success'
-                : f === 'High Activity' || f === 'Significant Balance'
+                : f === 'High Activity' || f === 'Significant Balance' || f === 'Token Contract'
                 ? 'success'
-                : f === 'Low Activity' || f === 'Unverified Contract'
+                : f === 'Low Activity'
                 ? 'warning'
+                : f === 'Contract Code Detected'
+                ? 'info'
                 : 'info';
-        risks.push({ type: t, title: f, description: '' });
+
+        const description =
+            f === 'Verified Entity'
+                ? 'Known reputable entity detected in local allowlist.'
+                : f === 'High Activity'
+                ? 'High transaction count suggests sustained usage history.'
+                : f === 'Low Activity'
+                ? 'Very low transaction history; trust signals are limited.'
+                : f === 'Significant Balance'
+                ? 'Meaningful native balance present at this address.'
+                : f === 'Token Contract'
+                ? 'Contract exposes token-like metadata; likely a token contract.'
+                : f === 'Contract Code Detected'
+                ? 'On-chain bytecode is present. This is not inherently bad; some wallets are smart-contract accounts.'
+                : '';
+
+        risks.push({ type: t, title: normalizedTitle, description });
     }
     if (enriched.market.nativePriceUsd <= 0) {
         risks.push({ type: 'info', title: 'Price Unavailable', description: '' });

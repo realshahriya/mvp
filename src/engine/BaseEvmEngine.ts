@@ -58,7 +58,10 @@ export abstract class BaseEvmEngine implements ChainEngine {
                 this.client.getBytecode({ address })
             ]);
 
-            const isContract = code !== undefined && code.length > 2;
+            const codeStr = typeof code === 'string' ? code : '';
+            const normalizedCode = codeStr.toLowerCase();
+            const hasBytecode = normalizedCode !== '' && normalizedCode !== '0x' && !/^0x0+$/.test(normalizedCode);
+            const isContract = hasBytecode;
             let tokenMetadata;
 
             if (isContract) {
@@ -88,7 +91,7 @@ export abstract class BaseEvmEngine implements ChainEngine {
                 balance: formatEther(balance),
                 txCount,
                 isContract,
-                codeSize: code ? code.length : 0,
+                codeSize: isContract ? codeStr.length : 0,
                 tokenMetadata
             };
 
@@ -130,7 +133,7 @@ export abstract class BaseEvmEngine implements ChainEngine {
                 score += 30; // It's a token, likely safer
                 flags.push("Token Contract");
             } else {
-                flags.push("Unverified Contract");
+                flags.push("Contract Code Detected");
             }
         } else {
             // EOA

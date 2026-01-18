@@ -1,4 +1,4 @@
-# CENCERA — What & Why (Hackathon)
+# CENCERA — What & Why
 
 ## What
 

@@ -183,7 +183,7 @@ export function Sidebar() {
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.1.17</b>
+                            <b>version: Alpha v0.1.19</b>
                         </div>
                     </div>
                 </div>
@@ -291,7 +291,7 @@ export function Sidebar() {
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.1.17</b>
+                            <b>version: Alpha v0.1.19</b>
                         </div>
                     </div>
                 </div>

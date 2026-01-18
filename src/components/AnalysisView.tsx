@@ -375,10 +375,8 @@ export default function AnalysisView() {
 
                                 {data.type === 'contract' && (
                                     <div className="flex items-center justify-between py-2">
-                                        <span className="text-zinc-500">Verified</span>
-                                        <span className="text-green-400 font-medium flex items-center gap-1">
-                                            <BadgeCheck className="w-3 h-3" /> Yes
-                                        </span>
+                                        <span className="text-zinc-500">Verification</span>
+                                        <span className="text-zinc-300 font-medium">Not checked</span>
                                     </div>
                                 )}
 
