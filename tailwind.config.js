@@ -13,11 +13,11 @@ module.exports = {
             },
             colors: {
                 // Brand Colors - Matching Official Website
-                void: '#030303',
-                surface: '#0A0A0A',
-                neon: '#00F0FF',        // Primary cyan brand color
-                'neon-dark': '#00B8CC', // Darker cyan
-                'neon-light': '#33F3FF', // Lighter cyan
+                void: '#111111',
+                surface: '#161616',
+                neon: '#7DD3FC',
+                'neon-dark': '#5FBEE8',
+                'neon-light': '#A3E5FF',
 
                 // Secondary Brand Colors from Website
                 'brand-purple': '#A855F7',   // Purple/Magenta (API Platform, Entity Analysis)
@@ -27,9 +27,9 @@ module.exports = {
 
                 danger: '#FF2A3D',
                 safe: '#00FF94',
-                subtle: '#1a1a1a',
-                'cyber-border': 'rgba(0, 240, 255, 0.1)',
-                'cyber-card': 'rgba(10, 10, 10, 0.85)',
+                subtle: '#222222',
+                'cyber-border': 'rgba(125, 211, 252, 0.14)',
+                'cyber-card': 'rgba(17, 17, 17, 0.85)',
 
                 // Trust Score Colors
                 'trust-100': '#00F0FF',  // Excellent - Cyan
@@ -39,9 +39,9 @@ module.exports = {
                 'trust-20': '#FF2A3D',   // Critical - Red
             },
             backgroundImage: {
-                'grid-pattern': "linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px)",
-                'brand-gradient': 'linear-gradient(135deg, #00F0FF 0%, #0080FF 100%)',
-                'brand-gradient-radial': 'radial-gradient(circle, rgba(0,240,255,0.1) 0%, transparent 70%)',
+                'grid-pattern': "linear-gradient(to right, rgba(125, 211, 252, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(125, 211, 252, 0.03) 1px, transparent 1px)",
+                'brand-gradient': 'linear-gradient(135deg, #7DD3FC 0%, #5FBEE8 100%)',
+                'brand-gradient-radial': 'radial-gradient(circle, rgba(125,211,252,0.12) 0%, transparent 70%)',
             },
             animation: {
                 scanline: 'scanline 8s linear infinite',
@@ -75,8 +75,8 @@ module.exports = {
                 },
             },
             boxShadow: {
-                'neon': '0 0 20px rgba(0, 240, 255, 0.3), 0 0 40px rgba(0, 240, 255, 0.1)',
-                'neon-strong': '0 0 30px rgba(0, 240, 255, 0.5), 0 0 60px rgba(0, 240, 255, 0.2)',
+                'neon': '0 0 20px rgba(125, 211, 252, 0.3), 0 0 40px rgba(125, 211, 252, 0.12)',
+                'neon-strong': '0 0 30px rgba(125, 211, 252, 0.5), 0 0 60px rgba(125, 211, 252, 0.22)',
                 'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
             },
         },

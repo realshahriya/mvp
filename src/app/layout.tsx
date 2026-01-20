@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${syne.variable} ${jetbrainsMono.variable} antialiased text-zinc-100 flex min-h-screen font-sans selection:bg-neon selection:text-black`}
+        className={`${syne.variable} ${jetbrainsMono.variable} antialiased text-[#E6E6E6] flex min-h-screen font-sans selection:bg-neon selection:text-[#111111]`}
       >
         <div className="fixed-background" />
         <WalletProvider>

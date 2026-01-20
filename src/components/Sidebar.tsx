@@ -138,10 +138,15 @@ export function Sidebar() {
                                     transition={{ duration: 0.3, ease: "easeOut" }}
                                     className="space-y-2"
                                 >
-                                    <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm">
+                                    <Link
+                                        href="/profile"
+                                        aria-label="Open profile"
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
+                                        onClick={() => setIsOpen(false)}
+                                    >
                                         <Wallet className="w-5 h-5 text-neon" />
                                         <span className="font-medium text-neon truncate">{formatAddress(address)}</span>
-                                    </div>
+                                    </Link>
                                     <button
                                         onClick={() => disconnect()}
                                         className="w-full px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 border border-white/5 hover:border-white/10"
@@ -183,7 +188,7 @@ export function Sidebar() {
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.1.19</b>
+                            <b>version: Alpha v0.1.21</b>
                         </div>
                     </div>
                 </div>
@@ -254,10 +259,15 @@ export function Sidebar() {
                     <div className="px-4 pb-4">
                             {isConnected && address ? (
                             <div className="space-y-2">
-                                <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm">
+                                <Link
+                                    href="/profile"
+                                    aria-label="Open profile"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
+                                    onClick={() => setIsOpen(false)}
+                                >
                                     <Wallet className="w-5 h-5 text-neon" />
                                     <span className="font-medium text-neon truncate">{formatAddress(address)}</span>
-                                </div>
+                                </Link>
                                 <button
                                     onClick={() => disconnect()}
                                     className="w-full px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 border border-white/5 hover:border-white/10"
@@ -291,7 +301,7 @@ export function Sidebar() {
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.1.19</b>
+                            <b>version: Alpha v0.1.21</b>
                         </div>
                     </div>
                 </div>

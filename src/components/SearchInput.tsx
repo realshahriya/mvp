@@ -116,18 +116,18 @@ export function SearchInput({
 
     return (
         <form onSubmit={handleSubmit} className={twMerge("relative group w-full", className)}>
-            {!compact && <div className="absolute -inset-0.5 bg-gradient-to-r from-neon to-blue-600 rounded-lg blur opacity-30 group-focus-within:opacity-75 transition duration-500"></div>}
+            {!compact && <div className="absolute -inset-0.5 bg-gradient-to-r from-neon/40 via-neon/15 to-transparent rounded-lg blur opacity-40 group-focus-within:opacity-75 transition duration-500"></div>}
             <div className={twMerge(
-                "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-white/10 ring-1 ring-white/10 group-focus-within:ring-neon/50",
+                "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-[#2A2A2A] ring-1 ring-[#2A2A2A] group-focus-within:ring-neon/40",
                 compact ? "py-0 bg-transparent border-transparent ring-0" : ""
             )}>
                 {!compact && (
-                    <div ref={dropdownRef} className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-white/10">
+                    <div ref={dropdownRef} className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
                         <button
                             type="button"
                             onClick={() => setOpen((v) => !v)}
                             onKeyDown={onKeyDown}
-                            className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-zinc-300 focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-white"
+                            className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-[#C7C7C7] focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-[#E6E6E6]"
                             aria-haspopup="listbox"
                             aria-expanded={open}
                         >
@@ -143,14 +143,14 @@ export function SearchInput({
                                     transition={{ duration: 0.16, ease: "easeOut" }}
                                     className="absolute left-2 right-2 sm:left-0 sm:right-0 top-full z-50 mt-2"
                                 >
-                                    <div className="rounded-lg border border-white/10 bg-black/80 backdrop-blur-sm shadow-xl">
+                                    <div className="rounded-lg border border-[#2A2A2A] bg-[#161616]/90 backdrop-blur-sm shadow-xl">
                                         <ul role="listbox" className="max-h-72 overflow-auto py-1 overscroll-contain">
                                             {CHAINS.map((c, i) => {
                                                 const isActive = i === activeIndex;
                                                 const isSelected = c.value === chain;
                                                 const baseClasses = c.disabled
-                                                    ? "text-zinc-600 cursor-not-allowed"
-                                                    : "text-zinc-200 hover:text-white hover:bg-white/5 cursor-pointer";
+                                                    ? "text-[#8A8A8A] cursor-not-allowed"
+                                                    : "text-[#C7C7C7] hover:text-[#E6E6E6] hover:bg-white/5 cursor-pointer";
                                                 return (
                                                     <li
                                                         key={c.value}
@@ -180,7 +180,7 @@ export function SearchInput({
                 )}
 
                 <div className="flex items-center gap-2 flex-1 min-w-0 px-2">
-                    <div className={twMerge("pl-1 text-zinc-400 flex-shrink-0", compact ? "pl-2" : "")}>
+                    <div className={twMerge("pl-1 text-[#B0B0B0] flex-shrink-0", compact ? "pl-2" : "")}>
                         <Search className="w-4 h-4 md:w-5 md:h-5" />
                     </div>
                     <input
@@ -188,7 +188,7 @@ export function SearchInput({
                         value={term}
                         onChange={(e) => setTerm(e.target.value)}
                         className={twMerge(
-                            "flex-1 min-w-0 bg-transparent border-none text-white placeholder-zinc-500 focus:outline-none focus:ring-0",
+                            "flex-1 min-w-0 bg-transparent border-none text-[#E6E6E6] placeholder-[#8A8A8A] focus:outline-none focus:ring-0",
                             compact ? "py-2 px-2 text-sm" : "py-3 px-3 text-base md:py-4 md:px-4 md:text-lg"
                         )}
                         placeholder={placeholder}
@@ -198,7 +198,7 @@ export function SearchInput({
                     <button
                         type="submit"
                         disabled={!term.trim() || isLoading}
-                        className="w-full sm:w-auto mt-2 sm:mt-0 mr-0 sm:mr-2 p-3 sm:p-2 rounded-md bg-white/5 hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full sm:w-auto mt-2 sm:mt-0 mr-0 sm:mr-2 p-3 sm:p-2 rounded-md bg-white/5 hover:bg-white/10 text-[#E6E6E6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {isLoading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
