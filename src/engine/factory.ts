@@ -9,7 +9,7 @@ import { AvalancheEngine } from './avalanche/agent';
 import { FantomEngine } from './fantom/agent';
 import { ZkSyncEngine } from './zksync/agent';
 import { RootstockEngine } from './rootstock/agent';
-import { SolanaEngine, SuiEngine, AptosEngine, TonEngine, BitcoinEngine, StacksEngine } from './non-evm/agent';
+import { SolanaEngine, SuiEngine, AptosEngine, TonEngine, BitcoinEngine, StacksEngine, LightningEngine, LiquidEngine, CosmosEngine, PolkadotEngine, NearEngine } from './non-evm/agent';
 import { ChainEngine } from './interface';
 import { ChainGptEngine } from './ai/ChainGptEngine';
 
@@ -23,6 +23,11 @@ export function getEngine(chainIdStr: string): ChainEngine {
         if (s === 'ton') return new TonEngine();
         if (s === 'bitcoin') return new BitcoinEngine();
         if (s === 'stacks') return new StacksEngine();
+        if (s === 'lightning') return new LightningEngine();
+        if (s === 'liquid') return new LiquidEngine();
+        if (s === 'cosmos') return new CosmosEngine();
+        if (s === 'polkadot') return new PolkadotEngine();
+        if (s === 'near') return new NearEngine();
         return new EthereumEngine();
     }
     const chainId = parseInt(s, 10);

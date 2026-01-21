@@ -50,7 +50,12 @@ const COINGECKO_IDS: Record<string, string> = {
     'sui': 'sui',
     'aptos': 'aptos',
     'ton': 'toncoin',
-    'stacks': 'stacks'
+    'stacks': 'stacks',
+    'cosmos': 'cosmos',
+    'polkadot': 'polkadot',
+    'lightning': 'bitcoin',
+    'liquid': 'liquid-bitcoin',
+    'near': 'near'
 };
 
 const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
@@ -67,6 +72,10 @@ const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
     APT: 'aptos',
     TON: 'toncoin',
     STX: 'stacks',
+    ATOM: 'cosmos',
+    DOT: 'polkadot',
+    LBTC: 'liquid-bitcoin',
+    NEAR: 'near',
 };
 
 const nativeCache: Record<string, { price: number; ts: number }> = {};

@@ -43,7 +43,14 @@ export async function POST(req: NextRequest) {
             "solana": "Solana",
             "sui": "Sui",
             "aptos": "Aptos",
-            "ton": "TON"
+            "ton": "TON",
+            "bitcoin": "Bitcoin",
+            "stacks": "Stacks",
+            "cosmos": "Cosmos Hub",
+            "polkadot": "Polkadot",
+            "lightning": "Lightning",
+            "liquid": "Liquid",
+            "near": "Near"
         };
         const chainKey = chain ? String(chain).trim() : '';
         const chainDisplay = chainKey ? (CHAIN_NAME_MAP[chainKey] ? CHAIN_NAME_MAP[chainKey] : chainKey) : '';

@@ -330,3 +330,170 @@ export class StacksEngine extends NonEvmEngine {
         };
     }
 }
+
+export class LightningEngine extends NonEvmEngine {
+    constructor() {
+        super('lightning', 'Lightning', 'BTC');
+    }
+
+    async fetchData(input: string): Promise<ChainData | null> {
+        const base = process.env.LIGHTNING_API_URL || 'https://mempool.space';
+        const node = await fetchJson(`${base}/api/v1/lightning/nodes/${encodeURIComponent(input)}`);
+        if (!node) return null;
+        const obj = asObj(node);
+        const capacityRaw = obj.capacity ?? obj.total_capacity ?? 0;
+        const channelsRaw = obj.channels ?? obj.channel_count ?? obj.channels_count ?? 0;
+        const capacity = typeof capacityRaw === 'string' || typeof capacityRaw === 'number' ? capacityRaw : 0;
+        const channels = typeof channelsRaw === 'string' || typeof channelsRaw === 'number' ? Number(channelsRaw) : 0;
+
+        return {
+            address: input,
+            ensName: null,
+            balance: formatUnits(String(capacity), 8, 8),
+            txCount: Number.isFinite(channels) ? Math.max(0, channels) : 0,
+            isContract: false,
+            codeSize: 0,
+            tokenMetadata: undefined
+        };
+    }
+}
+
+export class LiquidEngine extends NonEvmEngine {
+    constructor() {
+        super('liquid', 'Liquid', 'LBTC');
+    }
+
+    async fetchData(input: string): Promise<ChainData | null> {
+        const base = process.env.LIQUID_API_URL || 'https://blockstream.info/liquid';
+        const j = await fetchJson(`${base}/api/address/${encodeURIComponent(input)}`);
+        if (!j) return null;
+        const obj = asObj(j);
+        const chain = asObj(obj.chain_stats);
+        const mem = asObj(obj.mempool_stats);
+        const funded = BigInt(String((chain.funded_txo_sum ?? 0) as unknown));
+        const spent = BigInt(String((chain.spent_txo_sum ?? 0) as unknown));
+        const fundedM = BigInt(String((mem.funded_txo_sum ?? 0) as unknown));
+        const spentM = BigInt(String((mem.spent_txo_sum ?? 0) as unknown));
+        const sats = funded - spent + (fundedM - spentM);
+        const txCount = (Number(chain.tx_count ?? 0) || 0) + (Number(mem.tx_count ?? 0) || 0);
+
+        return {
+            address: input,
+            ensName: null,
+            balance: formatUnits(sats < BigInt(0) ? BigInt(0) : sats, 8, 8),
+            txCount,
+            isContract: false,
+            codeSize: 0,
+            tokenMetadata: undefined
+        };
+    }
+}
+
+export class CosmosEngine extends NonEvmEngine {
+    constructor() {
+        super('cosmos', 'Cosmos Hub', 'ATOM');
+    }
+
+    async fetchData(input: string): Promise<ChainData | null> {
+        const base = process.env.COSMOS_API_URL || 'https://rest.cosmos.directory/cosmoshub';
+        const [balJson, txJson] = await Promise.all([
+            fetchJson(`${base}/cosmos/bank/v1beta1/balances/${encodeURIComponent(input)}`),
+            fetchJson(`${base}/cosmos/tx/v1beta1/txs?events=message.sender%3D${encodeURIComponent(input)}&pagination.limit=1`)
+        ]);
+        if (!balJson) return null;
+        const balObj = asObj(balJson);
+        const balances = asArr(balObj.balances);
+        let uatom = '0';
+        for (const b of balances) {
+            const bo = asObj(b);
+            const denom = bo.denom;
+            if (denom === 'uatom') {
+                const amount = bo.amount;
+                if (typeof amount === 'string' || typeof amount === 'number') {
+                    uatom = String(amount);
+                }
+                break;
+            }
+        }
+        const txObj = asObj(txJson);
+        const pagination = asObj(txObj.pagination);
+        const totalRaw = pagination.total ?? 0;
+        const txCount = typeof totalRaw === 'string' ? parseInt(totalRaw, 10) : typeof totalRaw === 'number' ? Math.trunc(totalRaw) : 0;
+
+        return {
+            address: input,
+            ensName: null,
+            balance: formatUnits(String(uatom), 6, 6),
+            txCount: Number.isFinite(txCount) ? txCount : 0,
+            isContract: false,
+            codeSize: 0,
+            tokenMetadata: undefined
+        };
+    }
+}
+
+export class PolkadotEngine extends NonEvmEngine {
+    constructor() {
+        super('polkadot', 'Polkadot', 'DOT');
+    }
+
+    async fetchData(input: string): Promise<ChainData | null> {
+        const base = process.env.POLKADOT_API_URL || 'https://polkadot.api.subscan.io';
+        const body = JSON.stringify({ address: input });
+        const res = await fetchJson(
+            `${base}/api/scan/account`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+        );
+        if (!res) return null;
+        const obj = asObj(res);
+        const data = asObj(obj.data);
+        const balRaw = data.balance ?? data.free_balance ?? 0;
+        const txRaw = data.tx_count ?? data.count_extrinsic ?? data.transfer_count ?? 0;
+        const bal = typeof balRaw === 'string' || typeof balRaw === 'number' ? String(balRaw) : '0';
+        const txCount = typeof txRaw === 'string' ? parseInt(txRaw, 10) : typeof txRaw === 'number' ? Math.trunc(txRaw) : 0;
+
+        return {
+            address: input,
+            ensName: null,
+            balance: formatUnits(bal, 10, 6),
+            txCount: Number.isFinite(txCount) ? txCount : 0,
+            isContract: false,
+            codeSize: 0,
+            tokenMetadata: undefined
+        };
+    }
+}
+
+export class NearEngine extends NonEvmEngine {
+    constructor() {
+        super('near', 'Near', 'NEAR');
+    }
+
+    async fetchData(input: string): Promise<ChainData | null> {
+        const rpc = process.env.NEAR_RPC_URL || 'https://rpc.mainnet.near.org';
+        const acct = await rpcJson(rpc, 'query', [
+            { request_type: 'view_account', finality: 'final', account_id: input }
+        ]);
+        if (!acct) return null;
+        const obj = asObj(acct);
+        const amountRaw = obj.amount ?? '0';
+        const bal = typeof amountRaw === 'string' || typeof amountRaw === 'number' ? String(amountRaw) : '0';
+
+        const base = process.env.NEAR_API_URL || 'https://api.nearblocks.io';
+        const meta = await fetchJson(`${base}/v1/account/${encodeURIComponent(input)}`);
+        const metaObj = asObj(meta);
+        const account = asObj(metaObj.account);
+        const txRaw = account.txns ?? account.tx_count ?? metaObj.txns ?? 0;
+        const txCount = typeof txRaw === 'string' ? parseInt(txRaw, 10) : typeof txRaw === 'number' ? Math.trunc(txRaw) : 0;
+
+        return {
+            address: input,
+            ensName: null,
+            balance: formatUnits(bal, 24, 6),
+            txCount: Number.isFinite(txCount) ? txCount : 0,
+            isContract: false,
+            codeSize: 0,
+            tokenMetadata: undefined
+        };
+    }
+}

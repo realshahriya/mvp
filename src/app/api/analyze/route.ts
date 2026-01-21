@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeEntity } from '@/lib/analysisEngine';
+import { runCaPipeline } from '@/lib/caPipeline';
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -14,32 +14,31 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // 1. Run the Analysis Engine
-        const data = await analyzeEntity(query, chainId);
-
-        // 2. Format Response according to Universal Trust Score Standard (Step 7)
+        const data = await runCaPipeline(query, chainId);
         const response = {
-            entity: data.id,
-            address: data.address,
-            type: data.type,
-            trust_score: data.score,
-            risk_level: data.label,
-            risk_flags: data.risks.map(r => r.title),
-            summary: data.summary,
-            ai_text: data.aiText,
-            sentiment: data.sentiment,
-            market_data: data.marketData ? {
-                portfolio_value_usd: data.marketData.portfolioValueUsd,
-                eth_price: data.marketData.ethPriceUsd,
-                native_balance: data.nativeBalance,
-                native_symbol: data.nativeSymbol,
-                native_price_usd: data.nativePriceUsd
-            } : null,
+            entity: data.normalized.chain.address,
+            address: data.normalized.chain.address,
+            type: data.normalized.chain.isContract ? 'contract' : 'wallet',
+            trust_score: data.chainGpt.score,
+            risk_level: data.rating,
+            risk_flags: data.signals.flags,
+            summary: data.chainGpt.summary,
+            ai_text: null,
+            sentiment: [],
+            market_data: {
+                portfolio_value_usd: data.normalized.market.priceUsd * data.normalized.chain.balanceNative,
+                eth_price: data.normalized.market.priceUsd,
+                native_balance: data.normalized.chain.balanceNative,
+                native_symbol: data.normalized.chain.nativeSymbol,
+                native_price_usd: data.normalized.market.priceUsd
+            },
             generated_at: new Date().toISOString(),
             metadata: {
-                social_hype_score: data.hypeScore,
-                social_mentions: data.mentionsCount
-            }
+                social_hype_score: data.social.hypeScore,
+                social_mentions: data.social.mentions,
+            },
+            report: data.report,
+            validation: data.validation,
         };
 
         return NextResponse.json(response);

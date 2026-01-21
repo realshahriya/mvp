@@ -7,7 +7,7 @@ import { TrustGauge } from '@/components/TrustGauge';
 import { RiskCard } from '@/components/RiskCard';
 import { SocialSentiment } from '@/components/SocialSentiment';
 import { SimulationEngine } from '@/components/SimulationEngine';
-import { Loader2, ShieldAlert, BadgeCheck, Copy, Database, ArrowUpRight, Zap, Clock, Shield, ExternalLink, AlertTriangle, Send, X } from 'lucide-react';
+import { Loader2, ShieldAlert, BadgeCheck, Copy, Database, ArrowUpRight, Zap, Clock, Shield, ExternalLink, AlertTriangle, Send, X, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { parseChaingptTrustResponse } from '@/lib/chaingptTrust';
 
@@ -26,7 +26,12 @@ const CHAIN_CONFIG: Record<string, { name: string, explorer: string, icon: strin
     "aptos": { name: "Aptos", explorer: "https://explorer.aptoslabs.com", icon: "APT" },
     "ton": { name: "TON", explorer: "https://tonscan.org", icon: "TON" },
     "bitcoin": { name: "Bitcoin", explorer: "https://mempool.space", icon: "BTC" },
-    "stacks": { name: "Stacks", explorer: "https://explorer.hiro.so", icon: "STX" }
+    "stacks": { name: "Stacks", explorer: "https://explorer.hiro.so", icon: "STX" },
+    "cosmos": { name: "Cosmos Hub", explorer: "https://www.mintscan.io/cosmos", icon: "ATOM" },
+    "polkadot": { name: "Polkadot", explorer: "https://polkadot.subscan.io", icon: "DOT" },
+    "lightning": { name: "Lightning", explorer: "https://mempool.space", icon: "⚡" },
+    "liquid": { name: "Liquid", explorer: "https://blockstream.info/liquid", icon: "LBTC" },
+    "near": { name: "Near", explorer: "https://nearblocks.io", icon: "NEAR" }
 };
 
 function getExplorerHref(chainId: string, address: string) {
@@ -37,6 +42,11 @@ function getExplorerHref(chainId: string, address: string) {
     if (chainId === 'ton') return `${chainInfo.explorer}/address/${address}`;
     if (chainId === 'bitcoin') return `${chainInfo.explorer}/address/${address}`;
     if (chainId === 'stacks') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'cosmos') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'polkadot') return `${chainInfo.explorer}/account/${address}`;
+    if (chainId === 'lightning') return `${chainInfo.explorer}/lightning/node/${address}`;
+    if (chainId === 'liquid') return `${chainInfo.explorer}/address/${address}`;
+    if (chainId === 'near') return `${chainInfo.explorer}/address/${address}`;
     return `${chainInfo.explorer}/address/${address}`;
 }
 
@@ -57,6 +67,8 @@ export default function AnalysisView() {
     const [reportText, setReportText] = useState("");
     const [reportStatus, setReportStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
     const [reportError, setReportError] = useState<string | null>(null);
+    const [downloading, setDownloading] = useState(false);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
 
     useEffect(() => {
         setLoading(true);
@@ -117,6 +129,33 @@ export default function AnalysisView() {
             navigator.clipboard.writeText(data.id);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const handleDownload = async () => {
+        setDownloading(true);
+        setDownloadError(null);
+        try {
+            const res = await fetch(`/api/ca-report/pdf?q=${encodeURIComponent(query)}&chain=${encodeURIComponent(chainId)}`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                const msg = String(err?.details || err?.error || 'Download failed');
+                throw new Error(msg);
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cencera-report.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            setDownloadError(msg);
+        } finally {
+            setDownloading(false);
         }
     };
 
@@ -227,6 +266,14 @@ export default function AnalysisView() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <ExplorerLink chainId={chainId} address={data.id} />
+                        <button
+                            onClick={handleDownload}
+                            className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-zinc-400 hover:text-white flex items-center gap-2 transition-colors"
+                            disabled={downloading}
+                        >
+                            <Download className="w-4 h-4" />
+                            {downloading ? 'Preparing...' : 'Download Report'}
+                        </button>
                         {data.score < 50 && (
                             <div className="px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 flex items-center gap-2 font-medium">
                                 <ShieldAlert className="w-5 h-5" />
@@ -241,6 +288,9 @@ export default function AnalysisView() {
                             Report
                         </button>
                     </div>
+                    {downloadError && (
+                        <div className="text-xs text-red-400 mt-2">{downloadError}</div>
+                    )}
                 </div>
             </div>
 

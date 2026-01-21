@@ -23,30 +23,61 @@ export function SearchInput({
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
+    const [sentiment, setSentiment] = useState<{
+        fetchedAt: string;
+        hashtagTotals: Array<{ bucket: string; count: number }>;
+        hashtagFrequency: Record<string, number>;
+        sentimentPercentages: { positive: number; neutral: number; negative: number };
+        engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
+        engagementTrend: Array<{ bucket: string; likes: number; retweets: number; replies: number; quotes: number; count: number }>;
+        topInfluentialPosts: Array<{
+            id: string;
+            text: string;
+            author: string;
+            influenceScore: number;
+            metrics: { likes: number; retweets: number; replies: number; quotes: number };
+            createdAt?: string;
+            url?: string;
+        }>;
+        baselineComparison: {
+            hashtagAvg: number;
+            engagementAvg: number;
+            sentimentAvg: { positive: number; neutral: number; negative: number };
+            deltas: {
+                hashtagDelta: number;
+                engagementDelta: number;
+                sentimentDelta: { positive: number; neutral: number; negative: number };
+            };
+        };
+    } | null>(null);
+    const [sentimentLoading, setSentimentLoading] = useState(false);
+    const [sentimentError, setSentimentError] = useState<string | null>(null);
+    const [refreshTick, setRefreshTick] = useState(0);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
 
     const CHAINS = useMemo(
         () => [
             { value: '1', label: 'Ethereum' },
-            { value: '10', label: 'Optimism' },
-            { value: '56', label: 'BNB Smart Chain' },
-            { value: '137', label: 'Polygon' },
-            { value: '250', label: 'Fantom' },
-            { value: '324', label: 'zkSync Era' },
-            { value: '8453', label: 'Base' },
-            { value: '42161', label: 'Arbitrum One' },
-            { value: '43114', label: 'Avalanche' },
-            { value: 'bitcoin', label: 'Bitcoin' },
-            { value: 'stacks', label: 'Stacks' },
-            { value: '30', label: 'Rootstock (RSK)' },
+            { value: '10', label: 'Optimism (Coming Soon)', disabled: true },
+            { value: '56', label: 'BNB Smart Chain (Coming Soon)', disabled: true },
+            { value: '137', label: 'Polygon (Coming Soon)', disabled: true },
+            { value: '250', label: 'Fantom (Coming Soon)', disabled: true },
+            { value: '324', label: 'zkSync Era (Coming Soon)', disabled: true },
+            { value: '8453', label: 'Base (Coming Soon)', disabled: true },
+            { value: '42161', label: 'Arbitrum One (Coming Soon)', disabled: true },
+            { value: '43114', label: 'Avalanche (Coming Soon)', disabled: true },
+            { value: 'bitcoin', label: 'Bitcoin (Coming Soon)', disabled: true },
+            { value: 'stacks', label: 'Stacks (Coming Soon)', disabled: true },
+            { value: '30', label: 'Rootstock (RSK) (Coming Soon)', disabled: true },
+            { value: 'solana', label: 'Solana (Coming Soon)', disabled: true },
+            { value: 'sui', label: 'Sui (Coming Soon)', disabled: true },
+            { value: 'aptos', label: 'Aptos (Coming Soon)', disabled: true },
+            { value: 'ton', label: 'The Open Network (Coming Soon)', disabled: true },
+            { value: 'cosmos', label: 'Cosmos Hub (Coming Soon)', disabled: true },
+            { value: 'polkadot', label: 'Polkadot (Coming Soon)', disabled: true },
             { value: 'lightning', label: 'Lightning (Coming Soon)', disabled: true },
             { value: 'liquid', label: 'Liquid (Coming Soon)', disabled: true },
-            { value: 'solana', label: 'Solana' },
-            { value: 'sui', label: 'Sui' },
-            { value: 'aptos', label: 'Aptos' },
-            { value: 'ton', label: 'The Open Network' },
-            { value: 'cosmos', label: 'Cosmos Hub (Coming Soon)', disabled: true },
-            { value: 'polkadot', label: 'Polkadot (Coming Soon)', disabled: true }
+            { value: 'near', label: 'Near Protocol (Coming Soon)', disabled: true },
         ],
         []
     );
@@ -59,6 +90,56 @@ export function SearchInput({
         document.addEventListener('pointerdown', handler);
         return () => document.removeEventListener('pointerdown', handler);
     }, []);
+
+    useEffect(() => {
+        if (compact) return;
+        const trimmed = term.trim();
+        if (!trimmed) return;
+        const interval = setInterval(() => {
+            setRefreshTick((v) => v + 1);
+        }, 30_000);
+        return () => clearInterval(interval);
+    }, [term, compact]);
+
+    useEffect(() => {
+        if (compact) return;
+        const trimmed = term.trim();
+        if (!trimmed || trimmed.length < 2) {
+            setSentiment(null);
+            setSentimentError(null);
+            return;
+        }
+        const controller = new AbortController();
+        let active = true;
+        setSentimentLoading(true);
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/x-sentiment?q=${encodeURIComponent(trimmed)}&chain=${encodeURIComponent(chain)}`, { signal: controller.signal });
+                if (!res.ok) {
+                    const errJson = await res.json().catch(() => ({}));
+                    const message = String(errJson?.details || errJson?.error || 'Sentiment fetch failed');
+                    throw new Error(message);
+                }
+                const data = await res.json();
+                if (active) {
+                    setSentiment(data);
+                    setSentimentError(null);
+                }
+            } catch (e: unknown) {
+                if (!active) return;
+                if ((e as { name?: string }).name === 'AbortError') return;
+                const msg = e instanceof Error ? e.message : String(e);
+                setSentimentError(msg);
+            } finally {
+                if (active) setSentimentLoading(false);
+            }
+        }, 600);
+        return () => {
+            active = false;
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [term, chain, compact, refreshTick]);
 
     const selectedLabel = useMemo(
         () => CHAINS.find((c) => c.value === chain)?.label ?? 'Select Chain',
@@ -115,12 +196,13 @@ export function SearchInput({
     };
 
     return (
-        <form onSubmit={handleSubmit} className={twMerge("relative group w-full", className)}>
-            {!compact && <div className="absolute -inset-0.5 bg-gradient-to-r from-neon/40 via-neon/15 to-transparent rounded-lg blur opacity-40 group-focus-within:opacity-75 transition duration-500"></div>}
-            <div className={twMerge(
-                "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-[#2A2A2A] ring-1 ring-[#2A2A2A] group-focus-within:ring-neon/40",
-                compact ? "py-0 bg-transparent border-transparent ring-0" : ""
-            )}>
+        <div className={twMerge("w-full space-y-4", className)}>
+            <form onSubmit={handleSubmit} className="relative group w-full">
+                {!compact && <div className="absolute -inset-0.5 bg-gradient-to-r from-neon/40 via-neon/15 to-transparent rounded-lg blur opacity-40 group-focus-within:opacity-75 transition duration-500"></div>}
+                <div className={twMerge(
+                    "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-[#2A2A2A] ring-1 ring-[#2A2A2A] group-focus-within:ring-neon/40",
+                    compact ? "py-0 bg-transparent border-transparent ring-0" : ""
+                )}>
                 {!compact && (
                     <div ref={dropdownRef} className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
                         <button
@@ -207,7 +289,82 @@ export function SearchInput({
                         )}
                     </button>
                 )}
-            </div>
-        </form>
+                </div>
+            </form>
+            {!compact && term.trim() && (
+                <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-xl p-4 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#B0B0B0]">
+                        <span>Social Sentiment (X)</span>
+                        <span>{sentimentLoading ? 'Updating...' : sentiment?.fetchedAt ? new Date(sentiment.fetchedAt).toLocaleTimeString() : 'Idle'}</span>
+                    </div>
+                    {sentimentError && (
+                        <div className="text-xs text-neon">{sentimentError}</div>
+                    )}
+                    {sentiment && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-[#E6E6E6]">Hashtag volume</div>
+                                    <div className="text-xs text-[#B0B0B0]">
+                                        Total {sentiment.hashtagTotals.reduce((sum, h) => sum + h.count, 0)} • Baseline {sentiment.baselineComparison.hashtagAvg} • Δ {sentiment.baselineComparison.deltas.hashtagDelta}
+                                    </div>
+                                    <div className="space-y-1 text-xs text-[#B0B0B0]">
+                                        {sentiment.hashtagTotals.slice(-4).map((h) => (
+                                            <div key={h.bucket} className="flex items-center justify-between">
+                                                <span>{h.bucket}</span>
+                                                <span>{h.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium text-[#E6E6E6]">Sentiment split</div>
+                                    <div className="text-xs text-[#B0B0B0]">
+                                        Positive {sentiment.sentimentPercentages.positive}% • Neutral {sentiment.sentimentPercentages.neutral}% • Negative {sentiment.sentimentPercentages.negative}%
+                                    </div>
+                                    <div className="text-xs text-[#B0B0B0]">
+                                        Baseline {sentiment.baselineComparison.sentimentAvg.positive}% / {sentiment.baselineComparison.sentimentAvg.neutral}% / {sentiment.baselineComparison.sentimentAvg.negative}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium text-[#E6E6E6]">Engagement trend</div>
+                                <div className="text-xs text-[#B0B0B0]">
+                                    Likes {sentiment.engagementTotals.likes} • Retweets {sentiment.engagementTotals.retweets} • Replies {sentiment.engagementTotals.replies}
+                                </div>
+                                <div className="space-y-1 text-xs text-[#B0B0B0]">
+                                    {sentiment.engagementTrend.slice(-4).map((e) => (
+                                        <div key={e.bucket} className="flex items-center justify-between">
+                                            <span>{e.bucket}</span>
+                                            <span>{e.likes + e.retweets + e.replies + e.quotes}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium text-[#E6E6E6]">Top influential posts</div>
+                                <div className="space-y-2">
+                                    {sentiment.topInfluentialPosts.slice(0, 3).map((post) => (
+                                        <a
+                                            key={post.id}
+                                            href={post.url || '#'}
+                                            target={post.url ? '_blank' : undefined}
+                                            rel={post.url ? 'noreferrer' : undefined}
+                                            className="block text-xs text-[#B0B0B0] border border-[#2A2A2A] rounded-lg px-3 py-2 hover:border-neon/30 hover:bg-white/5 transition-all"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="truncate">{post.author}</span>
+                                                <span>Influence {post.influenceScore}</span>
+                                            </div>
+                                            <div className="mt-1 line-clamp-2">{post.text}</div>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

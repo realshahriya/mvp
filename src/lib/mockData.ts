@@ -6,7 +6,7 @@ export interface EntityData {
     address: string; // The actual Ethereum address
     type: 'wallet' | 'contract' | 'nft' | 'token';
     score: number;
-    label: 'Safe' | 'Caution' | 'High Risk';
+    label: 'Safe' | 'Caution' | 'High Risk' | 'Excellent' | 'Good' | 'Fair' | 'Poor';
     summary: string;
     aiText?: string;
     risks: { type: "success" | "warning" | "danger" | "info"; title: string; description: string }[];
