@@ -1,6 +1,6 @@
 "use client";
 
-import { Key, Bell, Shield, CreditCard, Database, Moon, Globe, Mail, Lock, Eye, EyeOff, Copy, Trash2, Plus, Wallet, AlertTriangle } from "lucide-react";
+import { Key, Bell, Shield, CreditCard, Globe, Mail, Lock, Eye, EyeOff, Copy, Trash2, Plus, Wallet, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAccount } from 'wagmi';
 import { appKit } from '@/lib/walletConfig';

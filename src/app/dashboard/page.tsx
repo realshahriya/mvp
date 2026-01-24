@@ -32,13 +32,6 @@ export default function DashboardPage() {
         );
     }
 
-    const stats = [
-        { label: "API Calls", value: "4.2M", change: "+12%", trend: "up", icon: Activity },
-        { label: "Wallets Analyzed", value: "18.3K", change: "+8%", trend: "up", icon: Wallet },
-        { label: "Threats Blocked", value: "247", change: "+23%", trend: "up", icon: Shield },
-        { label: "Avg Response", value: "48ms", change: "-5%", trend: "down", icon: Zap },
-    ];
-
     const recentActivity = [
         { type: "scan", address: "0x742d...4cB7", score: 92, time: "2 min ago", status: "safe" },
         { type: "scan", address: "0x1234...5678", score: 45, time: "5 min ago", status: "risky" },

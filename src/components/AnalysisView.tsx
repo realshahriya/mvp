@@ -61,6 +61,17 @@ export default function AnalysisView() {
     const [error, setError] = useState<string | null>(null);
     const [loadingStep, setLoadingStep] = useState(0);
     const [copied, setCopied] = useState(false);
+    const [socialDetail, setSocialDetail] = useState<{
+        x: {
+            fetchedAt: string;
+            sentimentPercentages: { positive: number; neutral: number; negative: number };
+            engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
+            hashtagTotals: Array<{ bucket: string; count: number }>;
+            topInfluentialPosts: Array<{ id: string; author: string; influenceScore: number }>;
+        } | null;
+        reddit: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
+        telegram: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
+    } | null>(null);
 
     const [showReport, setShowReport] = useState(false);
     const [reason, setReason] = useState("");
@@ -108,6 +119,7 @@ export default function AnalysisView() {
                         }
                         : undefined
                 };
+                setSocialDetail(j.social_detail ?? null);
                 setTimeout(() => {
                     clearInterval(interval);
                     setData(d);
@@ -386,7 +398,48 @@ export default function AnalysisView() {
 
                     {/* Bottom Row - Equal Heights */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <SocialSentiment data={data.sentiment} />
+                        {data.sentiment && data.sentiment.length > 0 ? (
+                            <SocialSentiment data={data.sentiment} />
+                        ) : (
+                            <div className="bg-zinc-900/85 rounded-2xl border border-white/10 p-6 h-full flex flex-col">
+                                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                                    <Database className="w-4 h-4 text-green-400" />
+                                    Social Sentiment
+                                </h3>
+                                {socialDetail?.x ? (
+                                    <div className="space-y-3 text-xs text-zinc-400">
+                                        <div className="flex items-center justify-between">
+                                            <span>Positive</span>
+                                            <span>{socialDetail.x.sentimentPercentages.positive}%</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>Neutral</span>
+                                            <span>{socialDetail.x.sentimentPercentages.neutral}%</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>Negative</span>
+                                            <span>{socialDetail.x.sentimentPercentages.negative}%</span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                            <span>Engagement</span>
+                                            <span>
+                                                {socialDetail.x.engagementTotals.likes + socialDetail.x.engagementTotals.retweets + socialDetail.x.engagementTotals.replies + socialDetail.x.engagementTotals.quotes}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>Hashtags</span>
+                                            <span>{socialDetail.x.hashtagTotals.reduce((sum, h) => sum + h.count, 0)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>Top influencer</span>
+                                            <span>{socialDetail.x.topInfluentialPosts[0]?.author ?? '-'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-zinc-500">No social sentiment data yet.</div>
+                                )}
+                            </div>
+                        )}
 
                         {/* On-Chain Signals */}
                         <div className="bg-zinc-900/85 rounded-2xl p-6 border border-white/10 flex flex-col">

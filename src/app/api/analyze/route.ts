@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
             },
             report: data.report,
             validation: data.validation,
+            social_detail: data.normalized.social,
         };
 
         return NextResponse.json(response);

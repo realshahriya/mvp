@@ -1,4 +1,4 @@
-import { aggregateSearchData } from './searchProcessor';
+import { aggregateSearchData, computeBaselineSignals } from './searchProcessor';
 import { getAiEngine } from '@/engine/factory';
 import { getNativePrice } from './marketData';
 import { getSentimentReport } from './xSentimentEngine';
@@ -53,6 +53,8 @@ const CACHE_TTL_MS = 60_000;
 const cache = new Map<string, { ts: number; data: CaPipelineResult }>();
 const rawCacheFile = path.join(process.cwd(), 'data', 'ca-raw-cache.json');
 const rateState: Record<string, { ts: number; tokens: number }> = {};
+const aiCache = new Map<string, { ts: number; score: number; summary: string }>();
+const AI_CACHE_TTL_MS = 10 * 60_000;
 
 function scoreToRating(score: number): CaPipelineResult['rating'] {
     if (score >= 85) return 'Excellent';
@@ -211,10 +213,48 @@ export async function runCaPipeline(query: string, chainId: string): Promise<CaP
     if (cached && now - cached.ts < CACHE_TTL_MS) return cached.data;
     console.info('ca-pipeline start', { query, chainId });
 
-    const aggregated = await fetchWithTimeout(
-        () => aggregateSearchData(query, chainId, { cacheTtlMs: 30_000 }),
-        4000
-    );
+    let aggregated: Awaited<ReturnType<typeof aggregateSearchData>>;
+    try {
+        aggregated = await fetchWithTimeout(
+            () => aggregateSearchData(query, chainId, { cacheTtlMs: 30_000 }),
+            4000
+        );
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error('ca-pipeline aggregation failed', { query, chainId, msg });
+        const baseline = computeBaselineSignals({
+            txCount: 0,
+            balanceNative: 0,
+            isContract: false,
+            isToken: false,
+        });
+        aggregated = {
+            query,
+            chainId,
+            chainName: chainId,
+            nativeSymbol: 'ETH',
+            fetchedAt: new Date().toISOString(),
+            entity: {
+                address: query,
+                ensName: null,
+                isContract: false,
+                txCount: 0,
+                balanceNative: 0,
+            },
+            market: {
+                nativePriceUsd: 0,
+                portfolioValueUsd: 0,
+            },
+            social: {
+                hypeScore: 0,
+                mentions: 0,
+            },
+            signals: {
+                flags: [...baseline.flags, 'Data Unavailable'],
+                baselineScore: baseline.baselineScore,
+            },
+        };
+    }
 
     const coingeckoMap: Record<string, string> = {
         '1': 'ethereum',
@@ -317,13 +357,27 @@ export async function runCaPipeline(query: string, chainId: string): Promise<CaP
     let trustScore = aggregated.signals.baselineScore;
     let summary = aggregated.signals.flags.join(', ') || 'Baseline assessment.';
     try {
-        await rateLimit('chaingpt', 12, 60_000);
-        const aiRes = await fetchWithTimeout(() => ai.generateTrustScoreAndSummaryFromAggregated(aggregated), 4000);
-        trustScore = aiRes.trustScore;
-        summary = aiRes.summary;
+        const apiKey = process.env.CHAINGPT_API_KEY;
+        if (!apiKey) {
+            summary = 'ChainGPT not configured. Set CHAINGPT_API_KEY to enable AI summaries.';
+        } else {
+            await rateLimit('chaingpt', 12, 60_000);
+            const aiRes = await ai.generateTrustScoreAndSummaryFromAggregated(aggregated);
+            trustScore = aiRes.trustScore;
+            summary = aiRes.summary;
+            aiCache.set(key, { ts: Date.now(), score: trustScore, summary });
+        }
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        summary = `AI unavailable (${msg}). Baseline trust score applied.`;
+        const cachedAi = aiCache.get(key);
+        if (cachedAi && Date.now() - cachedAi.ts < AI_CACHE_TTL_MS) {
+            trustScore = cachedAi.score;
+            summary = cachedAi.summary;
+        } else if (msg === 'timeout') {
+            summary = 'ChainGPT timeout. Baseline trust score applied.';
+        } else {
+            summary = `ChainGPT error (${msg}). Baseline trust score applied.`;
+        }
     }
 
     const rating = scoreToRating(trustScore);

@@ -42,8 +42,6 @@ export function TrustGauge({ score, size = 200, showLabel = true, safeThreshold 
         return "text-red-500"; // Red
     };
 
-    const strokeColor = score >= safeThreshold ? "#00ff9d" : score >= riskThreshold ? "#eab308" : "#ef4444";
-
     // SVG Config
     // SVG Config
     const strokeWidth = size < 100 ? 5 : 15; // Thinner stroke for small sizes
