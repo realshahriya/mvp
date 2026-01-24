@@ -3,9 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { LayoutDashboard, Menu, MessageSquare, X, Send, Wallet, BarChart3, Settings, Lock, Loader2 } from "lucide-react";
+import { LayoutDashboard, Menu, MessageSquare, X, Send, Wallet, BarChart3, Settings, Lock, Loader2, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { appKit } from '@/lib/walletConfig';
 
@@ -23,11 +23,6 @@ export function Sidebar() {
     const [attachWallet, setAttachWallet] = useState(true);
 
     const { address, isConnected } = useAccount();
-    const { disconnect } = useDisconnect();
-
-    const formatAddress = (addr: string) => {
-        return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-    };
 
     useEffect(() => {
         const shouldOpen = searchParams.get('feedback') === '1';
@@ -40,6 +35,7 @@ export function Sidebar() {
     const links = [
         { name: "Overview", href: "/", icon: LayoutDashboard },
         { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
+        { name: "Messages", href: "/messages", icon: MessageSquare },
         { name: "Settings", href: "/settings", icon: Settings },
     ];
 
@@ -144,15 +140,9 @@ export function Sidebar() {
                                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
                                         onClick={() => setIsOpen(false)}
                                     >
-                                        <Wallet className="w-5 h-5 text-neon" />
-                                        <span className="font-medium text-neon truncate">{formatAddress(address)}</span>
+                                        <UserCircle className="w-5 h-5 text-neon" />
+                                        <span className="font-medium text-neon">Profile</span>
                                     </Link>
-                                    <button
-                                        onClick={() => disconnect()}
-                                        className="w-full px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 border border-white/5 hover:border-white/10"
-                                    >
-                                        Disconnect
-                                    </button>
                                 </motion.div>
                             ) : (
                                 <motion.button
@@ -162,10 +152,9 @@ export function Sidebar() {
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.3, ease: "easeOut" }}
                                     onClick={() => appKit.open()}
-                                    disabled
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/10 bg-white/5 cursor-not-allowed font-mono text-sm text-zinc-500"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 hover:bg-neon/20 hover:border-neon/30 font-mono text-sm text-neon transition-all duration-300"
                                 >
-                                    <Wallet className="w-5 h-5 text-zinc-600" />
+                                    <Wallet className="w-5 h-5" />
                                     <span className="font-medium">Connect Wallet</span>
                                 </motion.button>
                             )}
@@ -265,23 +254,16 @@ export function Sidebar() {
                                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
                                     onClick={() => setIsOpen(false)}
                                 >
-                                    <Wallet className="w-5 h-5 text-neon" />
-                                    <span className="font-medium text-neon truncate">{formatAddress(address)}</span>
+                                    <UserCircle className="w-5 h-5 text-neon" />
+                                    <span className="font-medium text-neon">Profile</span>
                                 </Link>
-                                <button
-                                    onClick={() => disconnect()}
-                                    className="w-full px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-300 border border-white/5 hover:border-white/10"
-                                >
-                                    Disconnect
-                                </button>
                             </div>
                             ) : (
                             <button
                                     onClick={() => appKit.open()}
-                                    disabled
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/10 bg-white/5 cursor-not-allowed font-mono text-sm text-zinc-500"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 hover:bg-neon/20 hover:border-neon/30 font-mono text-sm text-neon transition-all duration-300"
                             >
-                                    <Wallet className="w-5 h-5 text-zinc-600" />
+                                    <Wallet className="w-5 h-5" />
                                     <span className="font-medium">Connect Wallet</span>
                             </button>
                         )}
