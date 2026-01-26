@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { LayoutDashboard, Menu, MessageSquare, X, Send, Wallet, BarChart3, Settings, Lock, Loader2, UserCircle } from "lucide-react";
+import { LayoutDashboard, Menu, X, Send, Wallet, BarChart3, Settings, Lock, Loader2, UserCircle, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccount } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +35,6 @@ export function Sidebar() {
     const links = [
         { name: "Overview", href: "/", icon: LayoutDashboard },
         { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-        { name: "Messages", href: "/messages", icon: MessageSquare },
         { name: "Settings", href: "/settings", icon: Settings },
     ];
 
