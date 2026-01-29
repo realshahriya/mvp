@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
+import { SidebarClient } from "@/components/SidebarClient";
 import { WalletProvider } from "@/components/WalletProvider";
 
 const syne = Syne({
@@ -44,10 +44,20 @@ export default function RootLayout({
           {/* Global Sidebar */}
           <div className="flex w-full">
             <Suspense fallback={<div className="hidden md:block md:w-64" />}>
-              <Sidebar />
+              <SidebarClient />
             </Suspense>
             <main className="flex-1 md:ml-64 flex flex-col min-h-screen relative overflow-hidden">
-              {children}
+              <div className="w-full bg-amber-500/10 border-b border-amber-500/30 text-amber-100 text-xs sm:text-sm py-2 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 z-20">
+                <span className="font-mono uppercase tracking-[0.25em] text-[10px] sm:text-xs text-amber-300">
+                  Testnet
+                </span>
+                <span className="text-[11px] sm:text-xs text-amber-100/90">
+                  Cencera is currently running on <b>TESTNET ONLY</b>.
+                </span>
+              </div>
+              <div className="flex-1">
+                {children}
+              </div>
             </main>
           </div>
         </WalletProvider>

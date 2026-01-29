@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runTrustAgent } from '@/lib/aiAgent';
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q');
@@ -27,3 +33,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
+}

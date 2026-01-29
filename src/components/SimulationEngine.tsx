@@ -2,17 +2,39 @@
 
 import { useState } from "react";
 import { AlertTriangle, CheckCircle, XCircle, ArrowRight, Gauge, Cpu, FileCode } from "lucide-react";
+import { api } from "@/lib/apiClient";
+
+type SimulateApiResponse = {
+    success?: unknown;
+    ok?: unknown;
+    gasUsed?: unknown;
+    gasLimit?: unknown;
+    stateChanges?: unknown;
+    logs?: unknown;
+    result?: unknown;
+    error?: unknown;
+};
 
 type ProxyDetails = { proxy?: boolean; implementation?: string };
 type PauseDetails = { paused?: boolean };
-type SimulationDetails = ProxyDetails | PauseDetails | undefined;
+type SimulationDetails = Partial<ProxyDetails & PauseDetails> | undefined;
 
 function isProxyDetails(d: SimulationDetails): d is ProxyDetails {
-    return !!d && ('proxy' in d || 'implementation' in d);
+    return !!d && (typeof d.proxy === 'boolean' || typeof d.implementation === 'string');
 }
 
 function isPauseDetails(d: SimulationDetails): d is PauseDetails {
-    return !!d && ('paused' in d);
+    return !!d && (typeof d.paused === 'boolean');
+}
+
+function asSimulationDetails(result: unknown): SimulationDetails {
+    if (!result || typeof result !== 'object') return undefined;
+    const obj = result as Record<string, unknown>;
+    const details: Partial<ProxyDetails & PauseDetails> = {};
+    if (typeof obj.proxy === 'boolean') details.proxy = obj.proxy;
+    if (typeof obj.implementation === 'string') details.implementation = obj.implementation;
+    if (typeof obj.paused === 'boolean') details.paused = obj.paused;
+    return Object.keys(details).length ? details : undefined;
 }
 
 interface SimulationResult {
@@ -97,16 +119,8 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
                 value: '0',
             };
             setAction('native_transfer');
-            const res = await fetch('/api/simulate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(String(err?.details || err?.error || 'Simulation failed'));
-            }
-            const data = await res.json();
+            const data = await api.postJson<SimulateApiResponse>('/simulate', { body: payload });
+            const details = asSimulationDetails(data.result);
 
             const r: SimulationResult = {
                 success: !!data.success || true,
@@ -120,7 +134,7 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
                     taxPercent: 0,
                     canPause: false,
                 },
-                details: data.result,
+                details,
             };
             setResult(r);
         } catch {
@@ -150,12 +164,8 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
             if (qa === 'quick_erc20_approve') { payload.token = cleanAddr; payload.to = '0x0000000000000000000000000000000000000001'; }
             if (qa === 'quick_proxy' || qa === 'quick_paused') payload.address = cleanAddr;
             setAction(qa);
-            const res = await fetch('/api/simulate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
+            const data = await api.postJson<SimulateApiResponse>('/simulate', { body: payload });
+            const details = asSimulationDetails(data.result);
             const r: SimulationResult = {
                 success: !!data.success || !!data.ok,
                 gasUsed: Number(data.gasUsed || 0),
@@ -166,17 +176,20 @@ export function SimulationEngine({ displayId, actualAddress, chainId, entityType
                     isHoneypot: false,
                     hasTransferTax: false,
                     taxPercent: 0,
-                    canPause: qa === 'quick_paused' ? !!(data.result && data.result.paused) : false,
+                    canPause: qa === 'quick_paused' ? (isPauseDetails(details) ? Boolean(details.paused) : false) : false,
                 },
                 error: typeof data.error === 'string' ? data.error : undefined,
-                details: data.result,
+                details,
             };
             if (r.error === 'not_contract') {
                 r.error = 'Unsupported for this address';
             }
             if (qa === 'quick_proxy') {
-                const proxyInfo = data.result;
-                r.logs = [`Proxy: ${proxyInfo?.proxy ? 'Yes' : 'No'}`, proxyInfo?.implementation ? `Impl: ${proxyInfo.implementation}` : 'Impl: Unknown'];
+                const proxyInfo = details;
+                r.logs = [
+                    `Proxy: ${isProxyDetails(proxyInfo) && proxyInfo.proxy ? 'Yes' : 'No'}`,
+                    isProxyDetails(proxyInfo) && proxyInfo.implementation ? `Impl: ${proxyInfo.implementation}` : 'Impl: Unknown',
+                ];
             }
             setResult(r);
         } catch {

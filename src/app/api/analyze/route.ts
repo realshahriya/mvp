@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runCaPipeline } from '@/lib/caPipeline';
+import { dbConnect, ScanResultModel } from '@/lib/db';
+import { deductCredit } from '@/lib/credits';
+
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q');
     const chainId = searchParams.get('chain') || '1';
+    const user = searchParams.get('user');
 
     if (!query) {
         return NextResponse.json(
@@ -13,8 +22,41 @@ export async function GET(request: NextRequest) {
         );
     }
 
+    if (!user) {
+        return NextResponse.json(
+            { error: 'Authentication required', details: 'User wallet address must be provided for credit deduction.' },
+            { status: 401 }
+        );
+    }
+
+    // Deduct Credit
+    const creditDeducted = await deductCredit(user, 11, `Analysis of ${query} on chain ${chainId}`);
+    if (!creditDeducted) {
+        return NextResponse.json(
+            { error: 'Insufficient credits', details: 'Please top up your account to continue using the API.' },
+            { status: 402 } // Payment Required
+        );
+    }
+
     try {
         const data = await runCaPipeline(query, chainId);
+        
+        // Save scan result to DB
+        try {
+            await dbConnect();
+            await ScanResultModel.create({
+                address: data.normalized.chain.address,
+                chain: chainId,
+                score: data.chainGpt.score,
+                riskLevel: data.rating,
+                scannedBy: user || undefined,
+                summary: data.chainGpt.summary,
+            });
+        } catch (dbError) {
+            console.error("Failed to save scan result:", dbError);
+            // Continue even if DB save fails
+        }
+
         const response = {
             entity: data.normalized.chain.address,
             address: data.normalized.chain.address,
@@ -52,4 +94,8 @@ export async function GET(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
 }

@@ -5,6 +5,60 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { twMerge } from 'tailwind-merge';
 import { AnimatePresence, motion } from 'framer-motion';
+import { api, ApiError } from '@/lib/apiClient';
+
+type XSentimentResponse = {
+    fetchedAt: string;
+    hashtagTotals: Array<{ bucket: string; count: number }>;
+    hashtagFrequency: Record<string, number>;
+    sentimentPercentages: { positive: number; neutral: number; negative: number };
+    engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
+    engagementTrend: Array<{ bucket: string; likes: number; retweets: number; replies: number; quotes: number; count: number }>;
+    topInfluentialPosts: Array<{
+        id: string;
+        text: string;
+        author: string;
+        influenceScore: number;
+        metrics: { likes: number; retweets: number; replies: number; quotes: number };
+        createdAt?: string;
+        url?: string;
+    }>;
+    baselineComparison: {
+        hashtagAvg: number;
+        engagementAvg: number;
+        sentimentAvg: { positive: number; neutral: number; negative: number };
+        deltas: {
+            hashtagDelta: number;
+            engagementDelta: number;
+            sentimentDelta: { positive: number; neutral: number; negative: number };
+        };
+    };
+};
+
+function getApiErrorField(body: unknown, key: "error" | "details") {
+    if (!body || typeof body !== "object") return "";
+    const value = (body as Record<string, unknown>)[key];
+    if (typeof value === "string") return value;
+    if (value === undefined || value === null) return "";
+    return String(value);
+}
+
+const DEFAULT_CHAIN_STORAGE_KEY = "cencera_default_chain";
+const DEFAULT_TESTNET_CHAIN = "11155111";
+type ChainOption = { value: string; label: string; disabled?: boolean };
+const CHAINS: ChainOption[] = [
+    { value: '11155111', label: 'Ethereum Sepolia' },
+    { value: '97', label: 'BNB Testnet' },
+    { value: '421614', label: 'Arbitrum Sepolia' },
+    { value: '11155420', label: 'Optimism Sepolia' },
+    { value: '84532', label: 'Base Sepolia' },
+    { value: '80002', label: 'Polygon Amoy' },
+    { value: '43113', label: 'Avalanche Fuji' },
+    { value: '4002', label: 'Fantom Testnet' },
+    { value: '300', label: 'zkSync Sepolia Testnet' },
+    { value: '31', label: 'Rootstock Testnet' },
+];
+const ENABLED_CHAIN_VALUES = new Set(CHAINS.filter((c) => !c.disabled).map((c) => c.value));
 
 export function SearchInput({
     className,
@@ -19,7 +73,7 @@ export function SearchInput({
 }) {
     const router = useRouter();
     const [term, setTerm] = useState('');
-    const [chain, setChain] = useState('1');
+    const [chain, setChain] = useState(DEFAULT_TESTNET_CHAIN);
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -54,33 +108,29 @@ export function SearchInput({
     const [sentimentError, setSentimentError] = useState<string | null>(null);
     const [refreshTick, setRefreshTick] = useState(0);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const didInitRef = useRef(false);
 
-    const CHAINS = useMemo(
-        () => [
-            { value: '1', label: 'Ethereum' },
-            { value: '10', label: 'Optimism (Coming Soon)', disabled: true },
-            { value: '56', label: 'BNB Smart Chain (Coming Soon)', disabled: true },
-            { value: '137', label: 'Polygon (Coming Soon)', disabled: true },
-            { value: '250', label: 'Fantom (Coming Soon)', disabled: true },
-            { value: '324', label: 'zkSync Era (Coming Soon)', disabled: true },
-            { value: '8453', label: 'Base (Coming Soon)', disabled: true },
-            { value: '42161', label: 'Arbitrum One (Coming Soon)', disabled: true },
-            { value: '43114', label: 'Avalanche (Coming Soon)', disabled: true },
-            { value: 'bitcoin', label: 'Bitcoin (Coming Soon)', disabled: true },
-            { value: 'stacks', label: 'Stacks (Coming Soon)', disabled: true },
-            { value: '30', label: 'Rootstock (RSK) (Coming Soon)', disabled: true },
-            { value: 'solana', label: 'Solana (Coming Soon)', disabled: true },
-            { value: 'sui', label: 'Sui (Coming Soon)', disabled: true },
-            { value: 'aptos', label: 'Aptos (Coming Soon)', disabled: true },
-            { value: 'ton', label: 'The Open Network (Coming Soon)', disabled: true },
-            { value: 'cosmos', label: 'Cosmos Hub (Coming Soon)', disabled: true },
-            { value: 'polkadot', label: 'Polkadot (Coming Soon)', disabled: true },
-            { value: 'lightning', label: 'Lightning (Coming Soon)', disabled: true },
-            { value: 'liquid', label: 'Liquid (Coming Soon)', disabled: true },
-            { value: 'near', label: 'Near Protocol (Coming Soon)', disabled: true },
-        ],
-        []
-    );
+    useEffect(() => {
+        try {
+            const stored = window.localStorage.getItem(DEFAULT_CHAIN_STORAGE_KEY);
+            if (stored && stored.trim() && ENABLED_CHAIN_VALUES.has(stored)) {
+                setChain(stored);
+                const idx = CHAINS.findIndex((c) => c.value === stored);
+                if (idx >= 0) setActiveIndex(idx);
+            }
+        } catch {
+        } finally {
+            didInitRef.current = true;
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!didInitRef.current) return;
+        try {
+            window.localStorage.setItem(DEFAULT_CHAIN_STORAGE_KEY, chain);
+        } catch {
+        }
+    }, [chain]);
 
     useEffect(() => {
         const handler = (e: MouseEvent | PointerEvent) => {
@@ -114,13 +164,10 @@ export function SearchInput({
         setSentimentLoading(true);
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/x-sentiment?q=${encodeURIComponent(trimmed)}&chain=${encodeURIComponent(chain)}`, { signal: controller.signal });
-                if (!res.ok) {
-                    const errJson = await res.json().catch(() => ({}));
-                    const message = String(errJson?.details || errJson?.error || 'Sentiment fetch failed');
-                    throw new Error(message);
-                }
-                const data = await res.json();
+                const data = await api.getJson<XSentimentResponse>('/x-sentiment', {
+                    query: { q: trimmed, chain },
+                    signal: controller.signal,
+                });
                 if (active) {
                     setSentiment(data);
                     setSentimentError(null);
@@ -128,7 +175,12 @@ export function SearchInput({
             } catch (e: unknown) {
                 if (!active) return;
                 if ((e as { name?: string }).name === 'AbortError') return;
-                const msg = e instanceof Error ? e.message : String(e);
+                const msg =
+                    e instanceof ApiError
+                        ? getApiErrorField(e.body, "details") || getApiErrorField(e.body, "error") || e.message
+                        : e instanceof Error
+                        ? e.message
+                        : String(e);
                 setSentimentError(msg);
             } finally {
                 if (active) setSentimentLoading(false);
@@ -143,7 +195,7 @@ export function SearchInput({
 
     const selectedLabel = useMemo(
         () => CHAINS.find((c) => c.value === chain)?.label ?? 'Select Chain',
-        [chain, CHAINS]
+        [chain]
     );
 
     const handleSubmit = (e: React.FormEvent) => {

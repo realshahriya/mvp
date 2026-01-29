@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runCaPipeline } from '@/lib/caPipeline';
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 function escapePdfText(input: string) {
     return input.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
@@ -61,4 +67,8 @@ export async function GET(req: NextRequest) {
         const msg = e instanceof Error ? e.message : String(e);
         return NextResponse.json({ error: 'pdf_failed', details: msg }, { status: 500 });
     }
+}
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
 }

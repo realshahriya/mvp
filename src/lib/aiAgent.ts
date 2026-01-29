@@ -82,7 +82,7 @@ export interface TrustAgentResult {
 
 export async function runTrustAgent(
     input: string,
-    chainIds: string[] = ["1", "10", "42161", "56", "8453"]
+    chainIds: string[] = ["11155111", "11155420", "421614", "97", "84532"]
 ): Promise<TrustAgentResult> {
     const engines: { engine: ChainEngine }[] = chainIds.map((id) => ({
         engine: getEngine(id),

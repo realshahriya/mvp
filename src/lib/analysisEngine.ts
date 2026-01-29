@@ -6,7 +6,7 @@ import { aggregateSearchData } from './searchProcessor';
 const aiCache = new Map<string, { ts: number; raw: string; trustScore: number; summary: string }>();
 const AI_CACHE_TTL_MS = 60_000;
 
-export async function analyzeEntity(input: string, chainId: string = '1'): Promise<EntityData> {
+export async function analyzeEntity(input: string, chainId: string = '11155111'): Promise<EntityData> {
     const aggregated = await aggregateSearchData(input, chainId, { cacheTtlMs: 30_000 });
     const normalizedAddr = aggregated.entity.address.toLowerCase();
 

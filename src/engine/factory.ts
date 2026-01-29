@@ -1,17 +1,19 @@
 
-import { EthereumEngine } from './ethereum/agent';
-import { ArbitrumEngine } from './arb/agent';
-import { BscEngine } from './bsc/agent';
-import { BaseChainEngine } from './base/agent';
-import { OptimismEngine } from './op/agent';
-import { PolygonEngine } from './polygon/agent';
-import { AvalancheEngine } from './avalanche/agent';
-import { FantomEngine } from './fantom/agent';
-import { ZkSyncEngine } from './zksync/agent';
-import { RootstockEngine } from './rootstock/agent';
 import { SolanaEngine, SuiEngine, AptosEngine, TonEngine, BitcoinEngine, StacksEngine, LightningEngine, LiquidEngine, CosmosEngine, PolkadotEngine, NearEngine } from './non-evm/agent';
 import { ChainEngine } from './interface';
 import { ChainGptEngine } from './ai/ChainGptEngine';
+import {
+    ArbitrumSepoliaEngine,
+    AvalancheFujiEngine,
+    BaseSepoliaEngine,
+    BnbTestnetEngine,
+    EthereumSepoliaEngine,
+    FantomTestnetEngine,
+    OptimismSepoliaEngine,
+    PolygonAmoyEngine,
+    RootstockTestnetEngine,
+    ZkSyncSepoliaTestnetEngine,
+} from './testnet/agent';
 
 export function getEngine(chainIdStr: string): ChainEngine {
     const s = String(chainIdStr).trim();
@@ -28,21 +30,31 @@ export function getEngine(chainIdStr: string): ChainEngine {
         if (s === 'cosmos') return new CosmosEngine();
         if (s === 'polkadot') return new PolkadotEngine();
         if (s === 'near') return new NearEngine();
-        return new EthereumEngine();
+        return new EthereumSepoliaEngine();
     }
     const chainId = parseInt(s, 10);
     switch (chainId) {
-        case 1: return new EthereumEngine();
-        case 42161: return new ArbitrumEngine();
-        case 56: return new BscEngine();
-        case 10: return new OptimismEngine();
-        case 8453: return new BaseChainEngine();
-        case 137: return new PolygonEngine();
-        case 43114: return new AvalancheEngine();
-        case 250: return new FantomEngine();
-        case 324: return new ZkSyncEngine();
-        case 30: return new RootstockEngine();
-        default: return new EthereumEngine();
+        case 11155111: return new EthereumSepoliaEngine();
+        case 421614: return new ArbitrumSepoliaEngine();
+        case 11155420: return new OptimismSepoliaEngine();
+        case 84532: return new BaseSepoliaEngine();
+        case 80002: return new PolygonAmoyEngine();
+        case 97: return new BnbTestnetEngine();
+        case 43113: return new AvalancheFujiEngine();
+        case 4002: return new FantomTestnetEngine();
+        case 300: return new ZkSyncSepoliaTestnetEngine();
+        case 31: return new RootstockTestnetEngine();
+        case 1: return new EthereumSepoliaEngine();
+        case 42161: return new ArbitrumSepoliaEngine();
+        case 56: return new BnbTestnetEngine();
+        case 10: return new OptimismSepoliaEngine();
+        case 8453: return new BaseSepoliaEngine();
+        case 137: return new PolygonAmoyEngine();
+        case 43114: return new AvalancheFujiEngine();
+        case 250: return new FantomTestnetEngine();
+        case 324: return new ZkSyncSepoliaTestnetEngine();
+        case 30: return new RootstockTestnetEngine();
+        default: return new EthereumSepoliaEngine();
     }
 }
 

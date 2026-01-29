@@ -3,6 +3,12 @@ import { createPublicClient, http, parseEther, parseUnits } from 'viem';
 import type { Chain } from 'viem';
 import { mainnet, arbitrum, optimism, base, bsc, polygon, avalanche, fantom } from 'viem/chains';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 const CHAINS: Record<string, Chain> = {
   '1': mainnet,
   '42161': arbitrum,
@@ -278,4 +284,8 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: 'simulate_failed', details: msg }, { status: 500 });
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
 }

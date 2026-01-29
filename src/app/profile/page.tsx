@@ -3,13 +3,66 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAccount } from "wagmi";
+import { useAccount, useWalletClient } from "wagmi";
 import { CheckCircle2, CircleHelp } from "lucide-react";
 import { AppKitAccountButton } from "@reown/appkit/react";
+import { createPublicClient, http } from "viem";
+import { bscTestnet } from "viem/chains";
  
+const USER_DATA_CONTRACT = (
+    process.env.NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_BSC_TESTNET ||
+    "0x0905f23783dba6A844C31870Ef272dC2E6b99B4b"
+).trim();
+
+const USER_DATA_ABI = [
+    {
+        type: "function",
+        name: "getUserData",
+        stateMutability: "view",
+        inputs: [{ name: "user", type: "address" }],
+        outputs: [
+            { name: "isRegistered", type: "bool" },
+            { name: "isVerified", type: "bool" },
+            { name: "name", type: "string" },
+            { name: "username", type: "string" },
+            { name: "bio", type: "string" },
+            { name: "joinedAt", type: "uint64" },
+            { name: "lastActive", type: "uint64" },
+        ],
+    },
+    {
+        type: "function",
+        name: "updateProfile",
+        stateMutability: "nonpayable",
+        inputs: [
+            { name: "_name", type: "string" },
+            { name: "_username", type: "string" },
+            { name: "_bio", type: "string" },
+        ],
+        outputs: [],
+    },
+] as const;
+
+const bscTestnetPublicClient = createPublicClient({ chain: bscTestnet, transport: http() });
+
+function normalizeUsername(value: string) {
+    return value.trim().toLowerCase();
+}
+
+function validateUsername(value: string) {
+    const u = normalizeUsername(value);
+    if (!u) return { ok: true, value: u, error: "" };
+    if (u.length < 3) return { ok: false, value: u, error: "Username must be at least 3 characters" };
+    if (u.length > 32) return { ok: false, value: u, error: "Username must be 32 characters or less" };
+    if (!/^[a-z0-9._]+$/.test(u)) return { ok: false, value: u, error: "Only a-z, 0-9, . and _ allowed" };
+    return { ok: true, value: u, error: "" };
+}
+
 export default function ProfilePage() {
     const { address, isConnected } = useAccount();
+    const { data: walletClient } = useWalletClient();
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
     const [displayName, setDisplayName] = useState("Cencera Analyst");
     const [username, setUsername] = useState("analyst.cencera");
     const [bio, setBio] = useState("Focused on wallet risk profiling, contract monitoring, and on-chain intelligence.");
@@ -17,6 +70,11 @@ export default function ProfilePage() {
     const [draftName, setDraftName] = useState(displayName);
     const [draftUsername, setDraftUsername] = useState(username);
     const [draftBio, setDraftBio] = useState(bio);
+    const [isVerified, setIsVerified] = useState(false);
+    const [loadingOnchain, setLoadingOnchain] = useState(false);
+    const [savingOnchain, setSavingOnchain] = useState(false);
+    const [onchainError, setOnchainError] = useState<string | null>(null);
+    const [txHash, setTxHash] = useState<string | null>(null);
 
     const bioWordLimit = 100;
     const bioWordCount = useMemo(() => {
@@ -24,19 +82,58 @@ export default function ProfilePage() {
         if (!trimmed) return 0;
         return trimmed.split(/\s+/).filter((word) => word.length > 0).length;
     }, [draftBio]);
+
     useEffect(() => {
-        if (!isConnected) {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (mounted && !isConnected) {
             router.push("/");
         }
-    }, [isConnected, router]);
+    }, [mounted, isConnected, router]);
+
+    useEffect(() => {
+        const run = async () => {
+            if (!isConnected || !address) return;
+            if (!USER_DATA_CONTRACT) return;
+            setLoadingOnchain(true);
+            setOnchainError(null);
+            try {
+                const res = await bscTestnetPublicClient.readContract({
+                    address: USER_DATA_CONTRACT as `0x${string}`,
+                    abi: USER_DATA_ABI,
+                    functionName: "getUserData",
+                    args: [address],
+                });
+                const [isRegistered, verified, name, uname, about] = res;
+                setIsVerified(Boolean(verified));
+                if (isRegistered) {
+                    if (name) setDisplayName(name);
+                    if (uname) setUsername(uname);
+                    if (about) setBio(about);
+                }
+            } catch (e: unknown) {
+                const msg = e instanceof Error ? e.message : String(e);
+                setOnchainError(msg);
+            } finally {
+                setLoadingOnchain(false);
+            }
+        };
+        run();
+    }, [isConnected, address]);
+
+    const effectiveAddress = mounted ? address : undefined;
+    const effectiveConnected = mounted && isConnected;
 
     const avatarUrl = useMemo(() => {
-        const seed = address || "0x0000000000000000000000000000000000000000";
+        const seed = effectiveAddress || "0x0000000000000000000000000000000000000000";
         return `https://api.dicebear.com/9.x/croodles-neutral/svg?seed=${encodeURIComponent(seed)}&size=120&radius=20&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
-    }, [address]);
+    }, [effectiveAddress]);
 
-    const displayAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected";
-    const isVerified = false;
+    const displayAddress = effectiveAddress ? `${effectiveAddress.slice(0, 6)}...${effectiveAddress.slice(-4)}` : "Not connected";
+    const contractDisplay = USER_DATA_CONTRACT ? `${USER_DATA_CONTRACT.slice(0, 6)}...${USER_DATA_CONTRACT.slice(-4)}` : "Not configured";
+    const canWrite = Boolean(mounted && USER_DATA_CONTRACT && walletClient && address);
 
     return (
         <div className="p-4 md:p-6 space-y-6 md:space-y-10 w-full mx-auto">
@@ -75,14 +172,34 @@ export default function ProfilePage() {
                             <span suppressHydrationWarning className="text-sm text-[#E6E6E6] font-mono">
                                 {displayAddress}
                             </span>
-                            <span className={`text-[10px] px-2 py-1 rounded-full ${isConnected ? "bg-neon/20 text-neon" : "bg-white/10 text-[#B0B0B0]"}`}>
-                                {isConnected ? "Connected" : "Offline"}
+                            <span className={`text-[10px] px-2 py-1 rounded-full ${effectiveConnected ? "bg-neon/20 text-neon" : "bg-white/10 text-[#B0B0B0]"}`}>
+                                {effectiveConnected ? "Connected" : "Offline"}
                             </span>
                         </div>
                         <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#0F0F0F]">
-                            <span className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">Account</span>
-                            <AppKitAccountButton balance="hide" />
+                            <span className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">BNB Testnet Contract</span>
+                            <span className="text-sm text-[#E6E6E6] font-mono">{contractDisplay}</span>
                         </div>
+                        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#0F0F0F]">
+                            <span className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">Account</span>
+                            {mounted ? <AppKitAccountButton balance="hide" /> : <span className="text-xs text-[#8E8E8E]">…</span>}
+                        </div>
+                        {loadingOnchain && (
+                            <div className="text-xs text-[#8E8E8E]">Loading profile from BNB Testnet…</div>
+                        )}
+                        {onchainError && (
+                            <div className="text-xs text-red-400">{onchainError}</div>
+                        )}
+                        {txHash && (
+                            <a
+                                href={`https://testnet.bscscan.com/tx/${txHash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-neon underline underline-offset-4"
+                            >
+                                View last transaction
+                            </a>
+                        )}
                     </div>
                     <div className="rounded-xl border border-[#2A2A2A] bg-[#0F0F0F] p-4 space-y-2">
                         <div className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">Status</div>
@@ -235,7 +352,7 @@ export default function ProfilePage() {
                                 <input
                                     type="text"
                                     value={draftUsername}
-                                    onChange={(event) => setDraftUsername(event.target.value.toLowerCase())}
+                                    onChange={(event) => setDraftUsername(normalizeUsername(event.target.value))}
                                     className="w-full px-4 py-3 bg-[#161616] border border-[#2A2A2A] rounded-lg text-[#E6E6E6] focus:outline-none focus:border-neon/30 transition-colors"
                                 />
                             </div>
@@ -260,20 +377,67 @@ export default function ProfilePage() {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (bioWordCount > bioWordLimit) return;
                                     const nextName = draftName.trim();
-                                    const nextUsername = draftUsername.trim();
+                                    const usernameCheck = validateUsername(draftUsername);
+                                    if (!usernameCheck.ok) {
+                                        setOnchainError(usernameCheck.error);
+                                        return;
+                                    }
+                                    const nextUsername = usernameCheck.value;
                                     const nextBio = draftBio.trim();
                                     setDisplayName(nextName || displayName);
                                     setUsername(nextUsername || username);
                                     setBio(nextBio || bio);
+
+                                    if (!USER_DATA_CONTRACT) {
+                                        setOnchainError("Missing NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_BSC_TESTNET");
+                                        setIsEditing(false);
+                                        return;
+                                    }
+                                    if (!walletClient) {
+                                        setOnchainError("Wallet client not available");
+                                        setIsEditing(false);
+                                        return;
+                                    }
+                                    if (!address) {
+                                        setOnchainError("Wallet address not available");
+                                        setIsEditing(false);
+                                        return;
+                                    }
+                                    const chainId = walletClient.chain?.id;
+                                    if (chainId !== 97) {
+                                        setOnchainError("Switch your wallet network to BNB Testnet (chainId 97)");
+                                        setIsEditing(false);
+                                        return;
+                                    }
+
+                                    setSavingOnchain(true);
+                                    setOnchainError(null);
+                                    try {
+                                        const hash = await walletClient.writeContract({
+                                            address: USER_DATA_CONTRACT as `0x${string}`,
+                                            abi: USER_DATA_ABI,
+                                            functionName: "updateProfile",
+                                            args: [nextName, nextUsername, nextBio],
+                                            account: address,
+                                        });
+                                        setTxHash(hash);
+                                        await bscTestnetPublicClient.waitForTransactionReceipt({ hash });
+                                    } catch (e: unknown) {
+                                        const msg = e instanceof Error ? e.message : String(e);
+                                        setOnchainError(msg);
+                                    } finally {
+                                        setSavingOnchain(false);
+                                    }
+
                                     setIsEditing(false);
                                 }}
                                 className="px-4 py-2 rounded-xl border border-neon/20 bg-neon/10 hover:bg-neon/20 text-neon text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={bioWordCount > bioWordLimit}
+                                disabled={bioWordCount > bioWordLimit || savingOnchain || !canWrite}
                             >
-                                Save
+                                {savingOnchain ? "Saving..." : "Save"}
                             </button>
                         </div>
                     </div>

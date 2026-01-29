@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { dbConnect, FeedbackReportModel } from '@/lib/db';
+
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,12 +20,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'content_too_short' }, { status: 400 });
         }
 
+        await dbConnect();
+        await FeedbackReportModel.create({
+            type,
+            severity,
+            content,
+            address,
+            chain,
+            createdAt: new Date(),
+        });
+
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
         const topicId = process.env.TELEGRAM_TOPIC_ID ? Number(process.env.TELEGRAM_TOPIC_ID) : undefined;
 
         if (!token || !chatId) {
-            return NextResponse.json({ error: 'telegram_not_configured' }, { status: 500 });
+            return NextResponse.json({ ok: true, stored: true, delivered: false, error: 'telegram_not_configured' });
         }
 
         const icon = type === 'bug' ? '🐞' : type === 'feature' ? '✨' : '📝';
@@ -31,6 +48,7 @@ export async function POST(req: NextRequest) {
              .replace(/>/g, '&gt;')
              .replace(/"/g, '&quot;');
         const CHAIN_NAME_MAP: Record<string, string> = {
+            // Mainnets
             "1": "Ethereum Mainnet",
             "56": "BNB Smart Chain",
             "137": "Polygon",
@@ -40,6 +58,18 @@ export async function POST(req: NextRequest) {
             "324": "zkSync Era",
             "43114": "Avalanche C-Chain",
             "250": "Fantom Opera",
+            // EVM Testnets
+            "11155111": "Ethereum Sepolia Testnet",
+            "97": "BNB Smart Chain Testnet",
+            "421614": "Arbitrum Sepolia Testnet",
+            "11155420": "Optimism Sepolia Testnet",
+            "84532": "Base Sepolia Testnet",
+            "80002": "Polygon Amoy Testnet",
+            "43113": "Avalanche Fuji Testnet",
+            "4002": "Fantom Testnet",
+            "300": "zkSync Sepolia Testnet",
+            "31": "Rootstock Testnet",
+            // Non-EVM
             "solana": "Solana",
             "sui": "Sui",
             "aptos": "Aptos",
@@ -111,4 +141,8 @@ export async function POST(req: NextRequest) {
     } catch {
         return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
     }
+}
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
 }

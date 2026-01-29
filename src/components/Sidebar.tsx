@@ -3,18 +3,27 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { LayoutDashboard, Menu, X, Send, Wallet, BarChart3, Settings, Lock, Loader2, UserCircle, MessageSquare } from "lucide-react";
-import { useEffect, useState } from "react";
+import { LayoutDashboard, Menu, X, Send, Wallet, BarChart3, Settings, Lock, Loader2, UserCircle, MessageSquare, Zap } from "lucide-react";
+import { useState } from "react";
 import { useAccount } from 'wagmi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { appKit } from '@/lib/walletConfig';
+import { api, ApiError } from "@/lib/apiClient";
+
+function getApiErrorField(body: unknown, key: "error" | "details") {
+    if (!body || typeof body !== "object") return "";
+    const value = (body as Record<string, unknown>)[key];
+    if (typeof value === "string") return value;
+    if (value === undefined || value === null) return "";
+    return String(value);
+}
 
 export function Sidebar() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
-    const [showFeedback, setShowFeedback] = useState(() => searchParams.get('feedback') === '1');
+    const [showFeedbackLocal, setShowFeedbackLocal] = useState(() => searchParams.get('feedback') === '1');
     const [feedbackType, setFeedbackType] = useState<"bug" | "feature" | "other">("feature");
     const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
     const [feedbackText, setFeedbackText] = useState("");
@@ -23,13 +32,7 @@ export function Sidebar() {
     const [attachWallet, setAttachWallet] = useState(true);
 
     const { address, isConnected } = useAccount();
-
-    useEffect(() => {
-        const shouldOpen = searchParams.get('feedback') === '1';
-        if (shouldOpen) {
-            setShowFeedback(true);
-        }
-    }, [searchParams]);
+    const showFeedback = showFeedbackLocal || searchParams.get('feedback') === '1';
 
 
     const links = [
@@ -134,6 +137,15 @@ export function Sidebar() {
                                     className="space-y-2"
                                 >
                                     <Link
+                                        href="/plans"
+                                        aria-label="Upgrade plan"
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 font-mono text-sm hover:bg-neon/20 hover:border-neon/30 transition-all duration-300"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <Zap className="w-5 h-5 text-neon" />
+                                        <span className="font-medium text-neon">Upgrade Plan</span>
+                                    </Link>
+                                    <Link
                                         href="/profile"
                                         aria-label="Open profile"
                                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
@@ -165,7 +177,7 @@ export function Sidebar() {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setShowFeedback(true)}
+                            onClick={() => setShowFeedbackLocal(true)}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 group font-mono text-sm text-zinc-400 hover:text-white"
                         >
                             <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
@@ -175,6 +187,9 @@ export function Sidebar() {
 
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
+                        <div className="text-[10px] text-amber-300 text-center font-mono uppercase tracking-[0.25em] mb-1">
+                            Testnet
+                        </div>
                         <div className="text-xs text-zinc-500 text-center font-mono">
                             <b>version: Alpha v0.1.21</b>
                         </div>
@@ -248,6 +263,15 @@ export function Sidebar() {
                             {isConnected && address ? (
                             <div className="space-y-2">
                                 <Link
+                                    href="/plans"
+                                    aria-label="Upgrade plan"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 font-mono text-sm hover:bg-neon/20 hover:border-neon/30 transition-all duration-300"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    <Zap className="w-5 h-5 text-neon" />
+                                    <span className="font-medium text-neon">Upgrade Plan</span>
+                                </Link>
+                                <Link
                                     href="/profile"
                                     aria-label="Open profile"
                                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/5 font-mono text-sm hover:bg-neon/10 hover:border-neon/30 transition-all duration-300"
@@ -271,7 +295,7 @@ export function Sidebar() {
                     {/* Feedback Section */}
                     <div className="px-4 pb-4">
                         <button
-                            onClick={() => setShowFeedback(true)}
+                            onClick={() => setShowFeedbackLocal(true)}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 group font-mono text-sm text-zinc-400 hover:text-white"
                         >
                             <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
@@ -320,7 +344,7 @@ export function Sidebar() {
                             className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
                         >
                             <button
-                                onClick={() => { setShowFeedback(false); router.replace(pathname); }}
+                                onClick={() => { setShowFeedbackLocal(false); router.replace(pathname); }}
                                 className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors duration-300"
                             >
                                 <X className="w-5 h-5" />
@@ -398,37 +422,31 @@ export function Sidebar() {
                                     }
                                     setReportStatus("sending");
                                     try {
-                                        const res = await fetch("/api/report", {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({
+                                        await api.postJson<unknown>("/report", {
+                                            body: {
                                                 type: feedbackType,
                                                 severity,
                                                 content: trimmed,
                                                 address: isConnected && attachWallet && address ? address : undefined
-                                            })
+                                            }
                                         });
-                                        if (!res.ok) {
-                                            let errMsg = "Unable to send. Try again.";
-                                            try {
-                                                const data = await res.json();
-                                                const code = String(data?.error || "");
-                                                if (code === "content_too_short") errMsg = "Please enter at least 3 characters";
-                                                else if (code === "telegram_not_configured") errMsg = "Telegram is not configured on the server";
-                                                else if (code === "telegram_failed") errMsg = String(data?.details || "Telegram request failed");
-                                            } catch {}
-                                            setReportError(errMsg);
-                                            throw new Error("fail");
-                                        }
                                         setReportStatus("sent");
                                         setTimeout(() => {
                                             setReportStatus("idle");
                                             setFeedbackText("");
                                             setReportError(null);
-                                            setShowFeedback(false);
+                                            setShowFeedbackLocal(false);
                                             router.replace(pathname);
                                         }, 900);
-                                    } catch {
+                                    } catch (e: unknown) {
+                                        if (e instanceof ApiError) {
+                                            let errMsg = "Unable to send. Try again.";
+                                            const code = getApiErrorField(e.body, "error");
+                                            if (code === "content_too_short") errMsg = "Please enter at least 3 characters";
+                                            else if (code === "telegram_not_configured") errMsg = "Telegram is not configured on the server";
+                                            else if (code === "telegram_failed") errMsg = getApiErrorField(e.body, "details") || "Telegram request failed";
+                                            setReportError(errMsg);
+                                        }
                                         setReportStatus("error");
                                         setTimeout(() => setReportStatus("idle"), 1500);
                                     }

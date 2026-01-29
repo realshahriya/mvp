@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
 import type { EntityData as AnalysisEntityData } from '@/lib/mockData';
 import { TrustGauge } from '@/components/TrustGauge';
 import { RiskCard } from '@/components/RiskCard';
@@ -10,8 +11,84 @@ import { SimulationEngine } from '@/components/SimulationEngine';
 import { Loader2, ShieldAlert, BadgeCheck, Copy, Database, ArrowUpRight, Zap, Clock, Shield, ExternalLink, AlertTriangle, Send, X, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { parseChaingptTrustResponse } from '@/lib/chaingptTrust';
+import { api, ApiError } from '@/lib/apiClient';
+
+type SocialDetail = {
+    x: {
+        fetchedAt: string;
+        sentimentPercentages: { positive: number; neutral: number; negative: number };
+        engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
+        hashtagTotals: Array<{ bucket: string; count: number }>;
+        topInfluentialPosts: Array<{ id: string; author: string; influenceScore: number }>;
+    } | null;
+    reddit: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
+    telegram: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
+} | null;
+
+type AnalyzeApiResponse = {
+    entity: string;
+    address?: string;
+    type: unknown;
+    trust_score: number;
+    risk_level: unknown;
+    risk_flags?: string[];
+    summary: string;
+    ai_text: string | null;
+    sentiment?: unknown;
+    market_data?: {
+        portfolio_value_usd?: number;
+        eth_price?: number;
+        native_balance?: number;
+        native_symbol?: string;
+        native_price_usd?: number;
+    };
+    metadata?: {
+        social_hype_score?: number;
+        social_mentions?: number;
+    };
+    social_detail?: SocialDetail;
+};
+
+function getApiErrorField(body: unknown, key: "error" | "details") {
+    if (!body || typeof body !== "object") return "";
+    const value = (body as Record<string, unknown>)[key];
+    if (typeof value === "string") return value;
+    if (value === undefined || value === null) return "";
+    return String(value);
+}
+
+type SentimentPoint = { time: string; value: number };
+
+function isSentimentPoint(v: unknown): v is SentimentPoint {
+    if (!v || typeof v !== "object") return false;
+    const o = v as Record<string, unknown>;
+    return typeof o.time === "string" && typeof o.value === "number";
+}
+
+function normalizeEntityType(v: unknown): AnalysisEntityData["type"] {
+    const s = String(v || "");
+    if (s === "wallet" || s === "contract" || s === "token" || s === "nft") return s;
+    return "wallet";
+}
+
+function normalizeLabel(v: unknown): AnalysisEntityData["label"] {
+    const s = String(v || "");
+    if (
+        s === "Safe" ||
+        s === "Caution" ||
+        s === "High Risk" ||
+        s === "Excellent" ||
+        s === "Good" ||
+        s === "Fair" ||
+        s === "Poor"
+    ) {
+        return s;
+    }
+    return "Caution";
+}
 
 const CHAIN_CONFIG: Record<string, { name: string, explorer: string, icon: string }> = {
+    // Mainnets
     "1": { name: "Ethereum Mainnet", explorer: "https://etherscan.io", icon: "Ξ" },
     "56": { name: "BNB Smart Chain", explorer: "https://bscscan.com", icon: "BNB" },
     "137": { name: "Polygon", explorer: "https://polygonscan.com", icon: "MATIC" },
@@ -21,6 +98,17 @@ const CHAIN_CONFIG: Record<string, { name: string, explorer: string, icon: strin
     "8453": { name: "Base", explorer: "https://basescan.org", icon: "BASE" },
     "324": { name: "zkSync Era", explorer: "https://explorer.zksync.io", icon: "ZK" },
     "250": { name: "Fantom Opera", explorer: "https://ftmscan.com", icon: "FTM" },
+    // EVM Testnets
+    "11155111": { name: "Ethereum Sepolia Testnet", explorer: "https://sepolia.etherscan.io", icon: "Ξ" },
+    "97": { name: "BNB Smart Chain Testnet", explorer: "https://testnet.bscscan.com", icon: "tBNB" },
+    "421614": { name: "Arbitrum Sepolia Testnet", explorer: "https://sepolia.arbiscan.io", icon: "ARB" },
+    "11155420": { name: "Optimism Sepolia Testnet", explorer: "https://sepolia-optimistic.etherscan.io", icon: "OP" },
+    "84532": { name: "Base Sepolia Testnet", explorer: "https://sepolia.basescan.org", icon: "BASE" },
+    "80002": { name: "Polygon Amoy Testnet", explorer: "https://www.oklink.com/amoy", icon: "MATIC" },
+    "43113": { name: "Avalanche Fuji Testnet", explorer: "https://testnet.snowtrace.io", icon: "AVAX" },
+    "4002": { name: "Fantom Testnet", explorer: "https://testnet.ftmscan.com", icon: "FTM" },
+    "300": { name: "zkSync Sepolia Testnet", explorer: "https://sepolia.explorer.zksync.io", icon: "ZK" },
+    "31": { name: "Rootstock Testnet", explorer: "https://explorer.testnet.rsk.co", icon: "tRBTC" },
     "solana": { name: "Solana", explorer: "https://solscan.io", icon: "SOL" },
     "sui": { name: "Sui", explorer: "https://suiscan.xyz", icon: "SUI" },
     "aptos": { name: "Aptos", explorer: "https://explorer.aptoslabs.com", icon: "APT" },
@@ -52,6 +140,7 @@ function getExplorerHref(chainId: string, address: string) {
 
 export default function AnalysisView() {
     const searchParams = useSearchParams();
+    const { address } = useAccount();
     const query = searchParams.get('q') || "vitalik.eth";
     const chainId = searchParams.get('chain') || "1";
     const chainInfo = CHAIN_CONFIG[chainId] || { name: `Chain ID: ${chainId}`, explorer: "https://etherscan.io", icon: "?" };
@@ -61,17 +150,7 @@ export default function AnalysisView() {
     const [error, setError] = useState<string | null>(null);
     const [loadingStep, setLoadingStep] = useState(0);
     const [copied, setCopied] = useState(false);
-    const [socialDetail, setSocialDetail] = useState<{
-        x: {
-            fetchedAt: string;
-            sentimentPercentages: { positive: number; neutral: number; negative: number };
-            engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
-            hashtagTotals: Array<{ bucket: string; count: number }>;
-            topInfluentialPosts: Array<{ id: string; author: string; influenceScore: number }>;
-        } | null;
-        reddit: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
-        telegram: { mentions: number; sentiment: { positive: number; neutral: number; negative: number } };
-    } | null>(null);
+    const [socialDetail, setSocialDetail] = useState<SocialDetail>(null);
 
     const [showReport, setShowReport] = useState(false);
     const [reason, setReason] = useState("");
@@ -92,20 +171,18 @@ export default function AnalysisView() {
 
         const run = async () => {
             try {
-                const res = await fetch(`/api/analyze?q=${encodeURIComponent(query)}&chain=${encodeURIComponent(chainId)}`);
-                if (!res.ok) throw new Error('failed');
-                const j = await res.json();
+                const j = await api.getJson<AnalyzeApiResponse>('/analyze', { query: { q: query, chain: chainId, user: address } });
                 const parsed = typeof j.ai_text === 'string' ? parseChaingptTrustResponse(j.ai_text) : null;
                 const d: AnalysisEntityData = {
                     id: j.entity,
                     address: j.address ?? query,
-                    type: j.type,
+                    type: normalizeEntityType(j.type),
                     score: parsed?.trustScore ?? j.trust_score,
-                    label: j.risk_level,
+                    label: normalizeLabel(j.risk_level),
                     summary: parsed?.summary ?? j.summary,
                     risks: (j.risk_flags || []).map((t: string) => ({ type: 'info', title: t, description: '' })),
                     history: [],
-                    sentiment: Array.isArray(j.sentiment) ? j.sentiment : [],
+                    sentiment: Array.isArray(j.sentiment) ? j.sentiment.filter(isSentimentPoint) : [],
                     hypeScore: j.metadata?.social_hype_score,
                     mentionsCount: j.metadata?.social_mentions,
                     nativeBalance: typeof j.market_data?.native_balance === 'number' ? j.market_data.native_balance : undefined,
@@ -125,16 +202,27 @@ export default function AnalysisView() {
                     setData(d);
                     setLoading(false);
                 }, 3000);
-            } catch {
+            } catch (err) {
                 clearInterval(interval);
-                setError("Could not analyze entity. Invalid address or network error.");
+                if (err instanceof ApiError) {
+                    if (err.status === 401) {
+                        setError("Please connect your wallet to use the analysis tool.");
+                    } else if (err.status === 402) {
+                        setError("Insufficient credits. Please top up in your dashboard.");
+                    } else {
+                        const msg = getApiErrorField(err.body, "error") || "Could not analyze entity.";
+                        setError(msg);
+                    }
+                } else {
+                    setError("Could not analyze entity. Invalid address or network error.");
+                }
                 setLoading(false);
             }
         };
         run();
 
         return () => clearInterval(interval);
-    }, [query, chainId, chainInfo.name]);
+    }, [query, chainId, chainInfo.name, address]);
 
     const handleCopy = () => {
         if (data) {
@@ -148,13 +236,7 @@ export default function AnalysisView() {
         setDownloading(true);
         setDownloadError(null);
         try {
-            const res = await fetch(`/api/ca-report/pdf?q=${encodeURIComponent(query)}&chain=${encodeURIComponent(chainId)}`);
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                const msg = String(err?.details || err?.error || 'Download failed');
-                throw new Error(msg);
-            }
-            const blob = await res.blob();
+            const blob = await api.getBlob('/v1/ca-report/pdf', { query: { q: query, chain: chainId } });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -164,7 +246,12 @@ export default function AnalysisView() {
             a.remove();
             URL.revokeObjectURL(url);
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
+            const msg =
+                e instanceof ApiError
+                    ? getApiErrorField(e.body, "details") || getApiErrorField(e.body, "error") || e.message
+                    : e instanceof Error
+                    ? e.message
+                    : String(e);
             setDownloadError(msg);
         } finally {
             setDownloading(false);
@@ -560,30 +647,14 @@ export default function AnalysisView() {
                                     }
                                     setReportStatus("sending");
                                     try {
-                                        const res = await fetch("/api/report-analysis", {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({
+                                        await api.postJson<unknown>("/report-analysis", {
+                                            body: {
                                                 reason: short,
                                                 details: trimmed,
                                                 chain: chainId,
-                                                address: (data.address ?? (data.id.match(/\((.*?)\)/)?.[1] ?? data.id))
-                                            })
+                                                address: (data.address ?? (data.id.match(/\((.*?)\)/)?.[1] ?? data.id)),
+                                            },
                                         });
-                                        if (!res.ok) {
-                                            let errMsg = "Unable to send. Try again.";
-                                            try {
-                                                const data = await res.json();
-                                                const code = String(data?.error || "");
-                                                if (code === "reason_too_short") errMsg = "Please enter a short reason";
-                                                else if (code === "content_too_short") errMsg = "Please enter at least 3 characters in details";
-                                                else if (code === "telegram_not_configured") errMsg = "Telegram is not configured for analysis reports";
-                                                else if (code === "telegram_failed") errMsg = String(data?.details || "Telegram request failed");
-                                            } catch {}
-                                            setReportError(errMsg);
-                                            setReportStatus("error");
-                                            return;
-                                        }
                                         setReportStatus("sent");
                                         setTimeout(() => {
                                             setReportStatus("idle");
@@ -592,7 +663,18 @@ export default function AnalysisView() {
                                             setReportError(null);
                                             setShowReport(false);
                                         }, 900);
-                                    } catch {
+                                    } catch (e: unknown) {
+                                        if (e instanceof ApiError) {
+                                            let errMsg = "Unable to send. Try again.";
+                                            const code = getApiErrorField(e.body, "error");
+                                            if (code === "reason_too_short") errMsg = "Please enter a short reason";
+                                            else if (code === "content_too_short") errMsg = "Please enter at least 3 characters in details";
+                                            else if (code === "telegram_not_configured") errMsg = "Telegram is not configured for analysis reports";
+                                            else if (code === "telegram_failed") errMsg = getApiErrorField(e.body, "details") || "Telegram request failed";
+                                            setReportError(errMsg);
+                                            setReportStatus("error");
+                                            return;
+                                        }
                                         setReportStatus("error");
                                         setTimeout(() => setReportStatus("idle"), 1500);
                                     }
