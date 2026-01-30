@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { appKit } from "@/lib/walletConfig";
@@ -30,7 +30,7 @@ function timeAgo(date: string | Date | number) {
     return Math.floor(seconds) + " sec ago";
 }
 
-export default function ActivityHistoryPage() {
+function ActivityHistoryContent() {
     const { isConnected, address } = useAccount();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -162,5 +162,27 @@ export default function ActivityHistoryPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function ActivityHistoryPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center space-y-6">
+                    <div className="w-20 h-20 rounded-full bg-neon/10 border border-neon/20 flex items-center justify-center mb-2">
+                        <BarChart3 className="w-10 h-10 text-neon" />
+                    </div>
+                    <div className="space-y-2 max-w-md">
+                        <h1 className="text-2xl font-bold text-[#E6E6E6] font-sans">Activity History</h1>
+                        <p className="text-[#B0B0B0] text-sm">
+                            Loading your analysis and API activity…
+                        </p>
+                    </div>
+                </div>
+            }
+        >
+            <ActivityHistoryContent />
+        </Suspense>
     );
 }

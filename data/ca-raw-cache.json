@@ -1019,6 +1019,305 @@
           }
         }
       }
+    },
+    {
+      "query": "vitalik.eth",
+      "chainId": "1",
+      "fetchedAt": "2026-01-30T16:59:44.954Z",
+      "chain": {
+        "address": "vitalik.eth",
+        "ensName": null,
+        "isContract": false,
+        "txCount": 0,
+        "balanceNative": 0,
+        "nativeSymbol": "ETH"
+      },
+      "market": {
+        "priceUsd": 2711.84339184795,
+        "volume24hUsd": 41868371267,
+        "liquidityUsd": 327095960798,
+        "sources": [
+          "coingecko",
+          "cryptocompare"
+        ],
+        "history": [
+          {
+            "ts": "2026-01-30T16:15:35.076Z",
+            "priceUsd": 2732.2810638257038,
+            "volumeUsd": 31362881370.103382
+          },
+          {
+            "ts": "2026-01-30T16:21:36.016Z",
+            "priceUsd": 2722.4868079465164,
+            "volumeUsd": 31398991401.836697
+          },
+          {
+            "ts": "2026-01-30T16:26:56.637Z",
+            "priceUsd": 2711.529912628675,
+            "volumeUsd": 31972011650.733196
+          },
+          {
+            "ts": "2026-01-30T16:31:48.653Z",
+            "priceUsd": 2729.0794259731074,
+            "volumeUsd": 32604285029.563377
+          },
+          {
+            "ts": "2026-01-30T16:35:10.115Z",
+            "priceUsd": 2726.265420055719,
+            "volumeUsd": 32988966799.577564
+          },
+          {
+            "ts": "2026-01-30T16:41:55.001Z",
+            "priceUsd": 2735.397934038428,
+            "volumeUsd": 34103415948.484432
+          },
+          {
+            "ts": "2026-01-30T16:46:49.929Z",
+            "priceUsd": 2730.211289006599,
+            "volumeUsd": 34247789841.39659
+          },
+          {
+            "ts": "2026-01-30T16:50:28.105Z",
+            "priceUsd": 2726.6230236177794,
+            "volumeUsd": 34239822102.768627
+          },
+          {
+            "ts": "2026-01-30T16:56:20.685Z",
+            "priceUsd": 2723.5382858032112,
+            "volumeUsd": 30702509485.612564
+          },
+          {
+            "ts": "2026-01-30T17:00:23.143Z",
+            "priceUsd": 2720.695743067765,
+            "volumeUsd": 35169688990.02633
+          },
+          {
+            "ts": "2026-01-30T17:06:29.955Z",
+            "priceUsd": 2709.7019024173655,
+            "volumeUsd": 33987189500.062172
+          },
+          {
+            "ts": "2026-01-30T17:11:35.278Z",
+            "priceUsd": 2710.407698903075,
+            "volumeUsd": 33856049394.964535
+          },
+          {
+            "ts": "2026-01-30T17:16:51.806Z",
+            "priceUsd": 2710.4335216736317,
+            "volumeUsd": 33812489302.33791
+          },
+          {
+            "ts": "2026-01-30T17:22:06.286Z",
+            "priceUsd": 2718.7837507585905,
+            "volumeUsd": 34183565440.738903
+          },
+          {
+            "ts": "2026-01-30T17:25:23.966Z",
+            "priceUsd": 2729.9514597573175,
+            "volumeUsd": 34473233236.863335
+          },
+          {
+            "ts": "2026-01-30T17:31:14.211Z",
+            "priceUsd": 2728.6777557122664,
+            "volumeUsd": 34494676023.65882
+          },
+          {
+            "ts": "2026-01-30T17:37:04.147Z",
+            "priceUsd": 2713.1963464456153,
+            "volumeUsd": 35808011524.63678
+          },
+          {
+            "ts": "2026-01-30T17:40:00.013Z",
+            "priceUsd": 2718.0257323729124,
+            "volumeUsd": 35821214392.07612
+          },
+          {
+            "ts": "2026-01-30T17:46:20.344Z",
+            "priceUsd": 2717.5529096909822,
+            "volumeUsd": 35805451344.093285
+          },
+          {
+            "ts": "2026-01-30T17:50:27.004Z",
+            "priceUsd": 2717.5101537465835,
+            "volumeUsd": 35872227608.60596
+          },
+          {
+            "ts": "2026-01-30T17:56:11.352Z",
+            "priceUsd": 2712.5222566949196,
+            "volumeUsd": 35958471260.86729
+          },
+          {
+            "ts": "2026-01-30T18:00:31.822Z",
+            "priceUsd": 2710.1138144210013,
+            "volumeUsd": 36081234561.6163
+          },
+          {
+            "ts": "2026-01-30T18:05:25.761Z",
+            "priceUsd": 2713.193863549346,
+            "volumeUsd": 35992275011.88154
+          },
+          {
+            "ts": "2026-01-30T18:07:23.000Z",
+            "priceUsd": 2712.3553732536457,
+            "volumeUsd": 34532458782.2583
+          }
+        ]
+      },
+      "social": {
+        "x": {
+          "query": "vitalik.eth",
+          "chainId": "1",
+          "fetchedAt": "2026-01-30T16:59:43.576Z",
+          "hashtagTotals": [
+            {
+              "bucket": "2026-01-30 06:00",
+              "count": 0
+            },
+            {
+              "bucket": "2026-01-29 21:00",
+              "count": 110
+            }
+          ],
+          "hashtagFrequency": {
+            "#exploit": 110
+          },
+          "sentimentPercentages": {
+            "positive": 62,
+            "neutral": 0,
+            "negative": 38
+          },
+          "engagementTotals": {
+            "likes": 7891,
+            "retweets": 3146,
+            "replies": 1251,
+            "quotes": 618
+          },
+          "engagementTrend": [
+            {
+              "bucket": "2026-01-30 06:00",
+              "likes": 3315,
+              "retweets": 1320,
+              "replies": 525,
+              "quotes": 255,
+              "count": 15
+            },
+            {
+              "bucket": "2026-01-29 21:00",
+              "likes": 4576,
+              "retweets": 1826,
+              "replies": 726,
+              "quotes": 363,
+              "count": 11
+            }
+          ],
+          "topInfluentialPosts": [
+            {
+              "id": "t15",
+              "text": "breakout breakout breakout breakout breakout breakout breakout breakout",
+              "author": "user_1",
+              "influenceScore": 100,
+              "metrics": {
+                "likes": 416,
+                "retweets": 166,
+                "replies": 66,
+                "quotes": 33
+              },
+              "createdAt": "2026-01-29T21:00:11.063Z",
+              "url": "https://x.com/user_1/status/t15"
+            },
+            {
+              "id": "t16",
+              "text": "#exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit",
+              "author": "user_2",
+              "influenceScore": 100,
+              "metrics": {
+                "likes": 416,
+                "retweets": 166,
+                "replies": 66,
+                "quotes": 33
+              },
+              "createdAt": "2026-01-29T21:00:11.063Z",
+              "url": "https://x.com/user_2/status/t16"
+            },
+            {
+              "id": "t17",
+              "text": "#exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit",
+              "author": "user_2",
+              "influenceScore": 100,
+              "metrics": {
+                "likes": 416,
+                "retweets": 166,
+                "replies": 66,
+                "quotes": 33
+              },
+              "createdAt": "2026-01-29T21:00:11.063Z",
+              "url": "https://x.com/user_2/status/t17"
+            },
+            {
+              "id": "t18",
+              "text": "#exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit",
+              "author": "user_2",
+              "influenceScore": 100,
+              "metrics": {
+                "likes": 416,
+                "retweets": 166,
+                "replies": 66,
+                "quotes": 33
+              },
+              "createdAt": "2026-01-29T21:00:11.063Z",
+              "url": "https://x.com/user_2/status/t18"
+            },
+            {
+              "id": "t19",
+              "text": "#exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit #exploit",
+              "author": "user_2",
+              "influenceScore": 100,
+              "metrics": {
+                "likes": 416,
+                "retweets": 166,
+                "replies": 66,
+                "quotes": 33
+              },
+              "createdAt": "2026-01-29T21:00:11.063Z",
+              "url": "https://x.com/user_2/status/t19"
+            }
+          ],
+          "baselineComparison": {
+            "hashtagAvg": 0,
+            "engagementAvg": 0,
+            "sentimentAvg": {
+              "positive": 0,
+              "neutral": 0,
+              "negative": 0
+            },
+            "deltas": {
+              "hashtagDelta": 110,
+              "engagementDelta": 12906,
+              "sentimentDelta": {
+                "positive": 62,
+                "neutral": 0,
+                "negative": 38
+              }
+            }
+          }
+        },
+        "reddit": {
+          "mentions": 25,
+          "sentiment": {
+            "positive": 8,
+            "neutral": 88,
+            "negative": 4
+          }
+        },
+        "telegram": {
+          "mentions": 0,
+          "sentiment": {
+            "positive": 0,
+            "neutral": 0,
+            "negative": 0
+          }
+        }
+      }
     }
   ]
 }

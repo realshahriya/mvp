@@ -4,6 +4,7 @@ import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarClient } from "@/components/SidebarClient";
 import { WalletProvider } from "@/components/WalletProvider";
+import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -58,6 +59,7 @@ export default function RootLayout({
               <div className="flex-1">
                 {children}
               </div>
+              <GlobalLoadingOverlay />
             </main>
           </div>
         </WalletProvider>

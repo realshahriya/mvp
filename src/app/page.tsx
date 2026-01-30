@@ -1,11 +1,26 @@
-import { Globe, Zap, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Globe, Zap } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
+import { dbConnect, ScanResultModel, CreditModel } from "@/lib/db";
 
-export default function Home() {
+const TOTAL_CHAIN_SUPPORTS = 30;
+
+export default async function Home() {
+  let totalSearches = 0;
+  let totalUsers = 0;
+
+  try {
+    await dbConnect();
+    const [searchCount, userCount] = await Promise.all([
+      ScanResultModel.countDocuments({}),
+      CreditModel.countDocuments({}),
+    ]);
+    totalSearches = searchCount;
+    totalUsers = userCount;
+  } catch {
+  }
+
   return (
     <div className="p-6 space-y-8 relative z-10 overflow-y-auto">
-      {/* Hero Section - Brand Themed */}
       <div className="text-center space-y-4 py-12">
         <h1 className="text-5xl md:text-6xl font-bold text-[#E6E6E6] mb-4 font-sans">
           Universal Trust Score Layer
@@ -20,7 +35,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Analysis - Brand Themed */}
       <div id="quick-analysis" className="bg-[#1A1A1A]/90 border border-[#2A2A2A] rounded-2xl p-8 hover:border-neon/25 transition-all">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center">
@@ -37,52 +51,57 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Navigation - Cyan Themed */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="#quick-analysis"
-          className="group bg-[#1A1A1A]/80 border border-[#2A2A2A] hover:border-neon/30 hover:bg-[#222222] rounded-2xl p-8 transition-all"
-        >
-          <Zap className="w-12 h-12 text-neon mb-4 group-hover:scale-110 transition-transform" />
-          <h3 className="text-xl font-bold text-[#E6E6E6] mb-2">Start Analysis</h3>
-          <p className="text-sm text-[#B0B0B0] mb-4">
-            Jump to Quick Analysis and scan wallets, contracts, or ENS names
-          </p>
-          <div className="flex items-center gap-2 text-neon font-medium text-sm">
-            Start Now
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-8 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
+                Total Searches
+              </h3>
+              <p className="text-xs text-[#6F6F6F]">
+                All trust analyses completed on Cencera.
+              </p>
+            </div>
+            <Zap className="w-8 h-8 text-neon" />
           </div>
-        </Link>
+          <div className="text-4xl font-mono font-semibold text-neon">
+            {totalSearches.toLocaleString()}
+          </div>
+        </div>
 
-        <Link
-          href="/analysis?q=vitalik.eth&chain=1"
-          className="group bg-[#1A1A1A]/80 border border-[#2A2A2A] hover:border-neon/30 hover:bg-[#222222] rounded-2xl p-8 transition-all"
-        >
-          <Zap className="w-12 h-12 text-neon mb-4 group-hover:scale-110 transition-transform" />
-          <h3 className="text-xl font-bold text-[#E6E6E6] mb-2">Interactive Demo</h3>
-          <p className="text-sm text-[#B0B0B0] mb-4">
-            Run a sample analysis on an ENS address to preview results
-          </p>
-          <div className="flex items-center gap-2 text-neon font-medium text-sm">
-            Analyze Sample
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-8 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
+                Total Users
+              </h3>
+              <p className="text-xs text-[#6F6F6F]">
+                Unique wallets with active credit accounts.
+              </p>
+            </div>
+            <Zap className="w-8 h-8 text-neon" />
           </div>
-        </Link>
+          <div className="text-4xl font-mono font-semibold text-neon">
+            {totalUsers.toLocaleString()}
+          </div>
+        </div>
 
-        <Link
-          href="/?feedback=1"
-          className="group bg-[#1A1A1A]/80 border border-[#2A2A2A] hover:border-neon/30 hover:bg-[#222222] rounded-2xl p-8 transition-all"
-        >
-          <Globe className="w-12 h-12 text-neon mb-4 group-hover:scale-110 transition-transform" />
-          <h3 className="text-xl font-bold text-[#E6E6E6] mb-2">Report Issue</h3>
-          <p className="text-sm text-[#B0B0B0] mb-4">
-            Share bugs, feedback, or feature requests to improve Cencera
-          </p>
-          <div className="flex items-center gap-2 text-neon font-medium text-sm">
-            Open Report
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-8 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
+                Chain Support
+              </h3>
+              <p className="text-xs text-[#6F6F6F]">
+                Networks connected across EVM and non-EVM.
+              </p>
+            </div>
+            <Globe className="w-8 h-8 text-neon" />
           </div>
-        </Link>
+          <div className="text-4xl font-mono font-semibold text-neon">
+            {TOTAL_CHAIN_SUPPORTS}
+          </div>
+        </div>
       </div>
     </div>
   );

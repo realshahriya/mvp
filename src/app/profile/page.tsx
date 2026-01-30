@@ -3,47 +3,86 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount, useChainId, useWalletClient } from "wagmi";
 import { CheckCircle2, CircleHelp } from "lucide-react";
 import { AppKitAccountButton } from "@reown/appkit/react";
 import { createPublicClient, http } from "viem";
-import { bscTestnet } from "viem/chains";
- 
-const USER_DATA_CONTRACT = (
-    process.env.NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_BSC_TESTNET ||
-    "0x0905f23783dba6A844C31870Ef272dC2E6b99B4b"
-).trim();
+import { arbitrumSepolia, bscTestnet, sepolia } from "viem/chains";
+import { api } from "@/lib/apiClient";
+import CenceraUserDataArtifact from "../../../contracts/CenceraUserData.json";
 
-const USER_DATA_ABI = [
-    {
-        type: "function",
-        name: "getUserData",
-        stateMutability: "view",
-        inputs: [{ name: "user", type: "address" }],
-        outputs: [
-            { name: "isRegistered", type: "bool" },
-            { name: "isVerified", type: "bool" },
-            { name: "name", type: "string" },
-            { name: "username", type: "string" },
-            { name: "bio", type: "string" },
-            { name: "joinedAt", type: "uint64" },
-            { name: "lastActive", type: "uint64" },
-        ],
-    },
-    {
-        type: "function",
-        name: "updateProfile",
-        stateMutability: "nonpayable",
-        inputs: [
-            { name: "_name", type: "string" },
-            { name: "_username", type: "string" },
-            { name: "_bio", type: "string" },
-        ],
-        outputs: [],
-    },
-] as const;
+const USER_DATA_ADDRESSES: Record<number, `0x${string}`> = {
+    11155111: (
+        process.env.NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_SEPOLIA ||
+        "0xd41672e7Df48558063F88006BCcE973FE260d15d"
+    ).trim() as `0x${string}`,
+    421614: (
+        process.env.NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_ARBITRUM_SEPOLIA ||
+        "0xd41672e7Df48558063F88006BCcE973FE260d15d"
+    ).trim() as `0x${string}`,
+    97: (
+        process.env.NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_BSC_TESTNET ||
+        "0x0905f23783dba6A844C31870Ef272dC2E6b99B4b"
+    ).trim() as `0x${string}`,
+};
 
+const USER_DATA_ABI = CenceraUserDataArtifact.abi as typeof CenceraUserDataArtifact.abi;
+
+const sepoliaPublicClient = createPublicClient({ chain: sepolia, transport: http() });
+const arbitrumSepoliaPublicClient = createPublicClient({ chain: arbitrumSepolia, transport: http() });
 const bscTestnetPublicClient = createPublicClient({ chain: bscTestnet, transport: http() });
+
+type DashboardStats = {
+    apiCalls: number;
+    walletsAnalyzed: number;
+    threatsBlocked: number;
+    avgResponse: string;
+};
+
+type UserDataChainConfig = {
+    address: `0x${string}`;
+    label: string;
+    badge: string;
+    explorerTx: string;
+    client:
+        | typeof sepoliaPublicClient
+        | typeof arbitrumSepoliaPublicClient
+        | typeof bscTestnetPublicClient;
+};
+
+function getUserDataConfig(chainId?: number | null): UserDataChainConfig | null {
+    if (!chainId) return null;
+    const address = USER_DATA_ADDRESSES[chainId];
+    if (!address) return null;
+    if (chainId === 11155111) {
+        return {
+            address,
+            label: "Ethereum Sepolia UserData",
+            badge: "Ethereum Sepolia",
+            explorerTx: "https://sepolia.etherscan.io/tx/",
+            client: sepoliaPublicClient,
+        };
+    }
+    if (chainId === 421614) {
+        return {
+            address,
+            label: "Arbitrum Sepolia UserData",
+            badge: "Arbitrum Sepolia",
+            explorerTx: "https://sepolia.arbiscan.io/tx/",
+            client: arbitrumSepoliaPublicClient,
+        };
+    }
+    if (chainId === 97) {
+        return {
+            address,
+            label: "BNB Testnet UserData",
+            badge: "BNB Testnet",
+            explorerTx: "https://testnet.bscscan.com/tx/",
+            client: bscTestnetPublicClient,
+        };
+    }
+    return null;
+}
 
 function normalizeUsername(value: string) {
     return value.trim().toLowerCase();
@@ -60,6 +99,7 @@ function validateUsername(value: string) {
 
 export default function ProfilePage() {
     const { address, isConnected } = useAccount();
+    const chainId = useChainId();
     const { data: walletClient } = useWalletClient();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -75,6 +115,8 @@ export default function ProfilePage() {
     const [savingOnchain, setSavingOnchain] = useState(false);
     const [onchainError, setOnchainError] = useState<string | null>(null);
     const [txHash, setTxHash] = useState<string | null>(null);
+    const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+    const [loadingStats, setLoadingStats] = useState(false);
 
     const bioWordLimit = 100;
     const bioWordCount = useMemo(() => {
@@ -96,16 +138,17 @@ export default function ProfilePage() {
     useEffect(() => {
         const run = async () => {
             if (!isConnected || !address) return;
-            if (!USER_DATA_CONTRACT) return;
+            const cfg = getUserDataConfig(chainId);
+            if (!cfg) return;
             setLoadingOnchain(true);
             setOnchainError(null);
             try {
-                const res = await bscTestnetPublicClient.readContract({
-                    address: USER_DATA_CONTRACT as `0x${string}`,
+                const res = (await cfg.client.readContract({
+                    address: cfg.address,
                     abi: USER_DATA_ABI,
                     functionName: "getUserData",
                     args: [address],
-                });
+                })) as readonly [boolean, boolean, string, string, string];
                 const [isRegistered, verified, name, uname, about] = res;
                 setIsVerified(Boolean(verified));
                 if (isRegistered) {
@@ -121,10 +164,33 @@ export default function ProfilePage() {
             }
         };
         run();
-    }, [isConnected, address]);
+    }, [isConnected, address, chainId]);
+
+    useEffect(() => {
+        if (!address) return;
+        let cancelled = false;
+        setLoadingStats(true);
+        api.getJson<{ stats: DashboardStats; recentActivity: unknown[] }>("/dashboard", { query: { address, period: "7d" } })
+            .then((data) => {
+                if (cancelled) return;
+                setDashboardStats(data.stats);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setDashboardStats(null);
+            })
+            .finally(() => {
+                if (cancelled) return;
+                setLoadingStats(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [address]);
 
     const effectiveAddress = mounted ? address : undefined;
     const effectiveConnected = mounted && isConnected;
+    const currentConfig = mounted ? getUserDataConfig(chainId) : null;
 
     const avatarUrl = useMemo(() => {
         const seed = effectiveAddress || "0x0000000000000000000000000000000000000000";
@@ -132,8 +198,10 @@ export default function ProfilePage() {
     }, [effectiveAddress]);
 
     const displayAddress = effectiveAddress ? `${effectiveAddress.slice(0, 6)}...${effectiveAddress.slice(-4)}` : "Not connected";
-    const contractDisplay = USER_DATA_CONTRACT ? `${USER_DATA_CONTRACT.slice(0, 6)}...${USER_DATA_CONTRACT.slice(-4)}` : "Not configured";
-    const canWrite = Boolean(mounted && USER_DATA_CONTRACT && walletClient && address);
+    const contractAddress = currentConfig?.address;
+    const contractDisplay = contractAddress ? `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}` : "Not configured";
+    const contractLabel = currentConfig?.label || "UserData Contract";
+    const canWrite = Boolean(mounted && walletClient && address && currentConfig);
 
     return (
         <div className="p-4 md:p-6 space-y-6 md:space-y-10 w-full mx-auto">
@@ -177,7 +245,14 @@ export default function ProfilePage() {
                             </span>
                         </div>
                         <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#0F0F0F]">
-                            <span className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">BNB Testnet Contract</span>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs uppercase tracking-[0.2em] text-[#6F6F6F]">{contractLabel}</span>
+                                {currentConfig && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neon/10 border border-neon/30 text-[10px] font-mono text-neon">
+                                        {currentConfig.badge}
+                                    </span>
+                                )}
+                            </div>
                             <span className="text-sm text-[#E6E6E6] font-mono">{contractDisplay}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#0F0F0F]">
@@ -185,14 +260,16 @@ export default function ProfilePage() {
                             {mounted ? <AppKitAccountButton balance="hide" /> : <span className="text-xs text-[#8E8E8E]">…</span>}
                         </div>
                         {loadingOnchain && (
-                            <div className="text-xs text-[#8E8E8E]">Loading profile from BNB Testnet…</div>
+                            <div className="text-xs text-[#8E8E8E]">
+                                Loading profile from {currentConfig?.label || "configured chain"}…
+                            </div>
                         )}
                         {onchainError && (
                             <div className="text-xs text-red-400">{onchainError}</div>
                         )}
-                        {txHash && (
+                        {txHash && currentConfig && (
                             <a
-                                href={`https://testnet.bscscan.com/tx/${txHash}`}
+                                href={`${currentConfig.explorerTx}${txHash}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-xs text-neon underline underline-offset-4"
@@ -240,20 +317,6 @@ export default function ProfilePage() {
                                 <div className="font-mono text-[#E6E6E6]">{displayAddress}</div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div>
-                                <div className="text-xs text-[#8E8E8E] mb-1">Trust sessions</div>
-                                <div className="font-medium text-[#E6E6E6]">Active</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-[#8E8E8E] mb-1">Messages</div>
-                                <div className="font-medium text-[#E6E6E6]">DMs enabled</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-[#8E8E8E] mb-1">Joined</div>
-                                <div className="font-medium text-[#E6E6E6]">Alpha v0.1</div>
-                            </div>
-                        </div>
                     </div>
 
                     <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-6 space-y-4">
@@ -261,66 +324,34 @@ export default function ProfilePage() {
                             <h2 className="text-sm font-bold text-[#E6E6E6] uppercase tracking-[0.18em]">
                                 Activity Summary
                             </h2>
-                            <span className="text-xs text-[#8E8E8E]">Last 7 days</span>
+                            <span className="text-xs text-[#8E8E8E]">
+                                {loadingStats ? "Loading…" : "Last 7 days"}
+                            </span>
                         </div>
+                        {(!dashboardStats && !loadingStats) && (
+                            <div className="text-xs text-[#8E8E8E]">
+                                No recent activity recorded for this wallet.
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="bg-[#161616] rounded-xl border border-[#2A2A2A] p-4 space-y-1">
                                 <div className="text-xs text-[#8E8E8E]">Analyses run</div>
-                                <div className="text-xl font-bold text-[#E6E6E6]">12</div>
+                                <div className="text-xl font-bold text-[#E6E6E6]">
+                                    {dashboardStats ? dashboardStats.apiCalls.toLocaleString() : "0"}
+                                </div>
                             </div>
                             <div className="bg-[#161616] rounded-xl border border-[#2A2A2A] p-4 space-y-1">
                                 <div className="text-xs text-[#8E8E8E]">Wallets reviewed</div>
-                                <div className="text-xl font-bold text-[#E6E6E6]">8</div>
+                                <div className="text-xl font-bold text-[#E6E6E6]">
+                                    {dashboardStats ? dashboardStats.walletsAnalyzed.toLocaleString() : "0"}
+                                </div>
                             </div>
                             <div className="bg-[#161616] rounded-xl border border-[#2A2A2A] p-4 space-y-1">
                                 <div className="text-xs text-[#8E8E8E]">Contracts inspected</div>
-                                <div className="text-xl font-bold text-[#E6E6E6]">5</div>
+                                <div className="text-xl font-bold text-[#E6E6E6]">
+                                    {dashboardStats ? dashboardStats.threatsBlocked.toLocaleString() : "0"}
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 pb-3 border-b border-[#2A2A2A]">
-                        <h2 className="text-xl font-bold text-[#E6E6E6]">Public Profile</h2>
-                    </div>
-                    <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm font-medium text-[#E6E6E6] mb-1">Show activity summary</div>
-                                <div className="text-xs text-[#B0B0B0]">Allow others to view your analysis volume</div>
-                            </div>
-                            <button className="relative w-12 h-6 rounded-full bg-neon transition-colors">
-                                <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full translate-x-6 transition-transform" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 pb-3 border-b border-[#2A2A2A]">
-                        <h2 className="text-xl font-bold text-[#E6E6E6]">Security</h2>
-                    </div>
-                    <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm font-medium text-[#E6E6E6] mb-1">Sign-in alerts</div>
-                                <div className="text-xs text-[#B0B0B0]">Get notified about new logins</div>
-                            </div>
-                            <button className="px-4 py-2 bg-neon/10 hover:bg-neon/20 border border-neon/20 hover:border-neon/30 text-neon text-sm font-medium rounded-lg transition-all">
-                                Configure
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm font-medium text-[#E6E6E6] mb-1">Active devices</div>
-                                <div className="text-xs text-[#B0B0B0]">Review trusted devices</div>
-                            </div>
-                            <button className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-[#2A2A2A] rounded-lg text-[#E6E6E6] text-sm font-medium transition-colors">
-                                View
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -387,15 +418,7 @@ export default function ProfilePage() {
                                     }
                                     const nextUsername = usernameCheck.value;
                                     const nextBio = draftBio.trim();
-                                    setDisplayName(nextName || displayName);
-                                    setUsername(nextUsername || username);
-                                    setBio(nextBio || bio);
 
-                                    if (!USER_DATA_CONTRACT) {
-                                        setOnchainError("Missing NEXT_PUBLIC_CENCERA_USERDATA_CONTRACT_BSC_TESTNET");
-                                        setIsEditing(false);
-                                        return;
-                                    }
                                     if (!walletClient) {
                                         setOnchainError("Wallet client not available");
                                         setIsEditing(false);
@@ -406,9 +429,10 @@ export default function ProfilePage() {
                                         setIsEditing(false);
                                         return;
                                     }
-                                    const chainId = walletClient.chain?.id;
-                                    if (chainId !== 97) {
-                                        setOnchainError("Switch your wallet network to BNB Testnet (chainId 97)");
+                                    const writeChainId = walletClient.chain?.id;
+                                    const writeConfig = getUserDataConfig(writeChainId);
+                                    if (!writeConfig) {
+                                        setOnchainError("Switch your wallet network to Ethereum Sepolia, Arbitrum Sepolia, or BNB Testnet");
                                         setIsEditing(false);
                                         return;
                                     }
@@ -417,14 +441,17 @@ export default function ProfilePage() {
                                     setOnchainError(null);
                                     try {
                                         const hash = await walletClient.writeContract({
-                                            address: USER_DATA_CONTRACT as `0x${string}`,
+                                            address: writeConfig.address,
                                             abi: USER_DATA_ABI,
                                             functionName: "updateProfile",
                                             args: [nextName, nextUsername, nextBio],
                                             account: address,
                                         });
                                         setTxHash(hash);
-                                        await bscTestnetPublicClient.waitForTransactionReceipt({ hash });
+                                        await writeConfig.client.waitForTransactionReceipt({ hash });
+                                        setDisplayName(nextName || displayName);
+                                        setUsername(nextUsername || username);
+                                        setBio(nextBio || bio);
                                     } catch (e: unknown) {
                                         const msg = e instanceof Error ? e.message : String(e);
                                         setOnchainError(msg);

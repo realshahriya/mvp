@@ -3,45 +3,10 @@
 import { Search, ArrowRight, Loader2, ChevronDown, Check } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import { twMerge } from 'tailwind-merge';
 import { AnimatePresence, motion } from 'framer-motion';
-import { api, ApiError } from '@/lib/apiClient';
-
-type XSentimentResponse = {
-    fetchedAt: string;
-    hashtagTotals: Array<{ bucket: string; count: number }>;
-    hashtagFrequency: Record<string, number>;
-    sentimentPercentages: { positive: number; neutral: number; negative: number };
-    engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
-    engagementTrend: Array<{ bucket: string; likes: number; retweets: number; replies: number; quotes: number; count: number }>;
-    topInfluentialPosts: Array<{
-        id: string;
-        text: string;
-        author: string;
-        influenceScore: number;
-        metrics: { likes: number; retweets: number; replies: number; quotes: number };
-        createdAt?: string;
-        url?: string;
-    }>;
-    baselineComparison: {
-        hashtagAvg: number;
-        engagementAvg: number;
-        sentimentAvg: { positive: number; neutral: number; negative: number };
-        deltas: {
-            hashtagDelta: number;
-            engagementDelta: number;
-            sentimentDelta: { positive: number; neutral: number; negative: number };
-        };
-    };
-};
-
-function getApiErrorField(body: unknown, key: "error" | "details") {
-    if (!body || typeof body !== "object") return "";
-    const value = (body as Record<string, unknown>)[key];
-    if (typeof value === "string") return value;
-    if (value === undefined || value === null) return "";
-    return String(value);
-}
+import { appKit } from '@/lib/walletConfig';
 
 const DEFAULT_CHAIN_STORAGE_KEY = "cencera_default_chain";
 const DEFAULT_TESTNET_CHAIN = "11155111";
@@ -72,41 +37,13 @@ export function SearchInput({
     compact?: boolean;
 }) {
     const router = useRouter();
+    const { address, isConnected } = useAccount();
     const [term, setTerm] = useState('');
     const [chain, setChain] = useState(DEFAULT_TESTNET_CHAIN);
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
-    const [sentiment, setSentiment] = useState<{
-        fetchedAt: string;
-        hashtagTotals: Array<{ bucket: string; count: number }>;
-        hashtagFrequency: Record<string, number>;
-        sentimentPercentages: { positive: number; neutral: number; negative: number };
-        engagementTotals: { likes: number; retweets: number; replies: number; quotes: number };
-        engagementTrend: Array<{ bucket: string; likes: number; retweets: number; replies: number; quotes: number; count: number }>;
-        topInfluentialPosts: Array<{
-            id: string;
-            text: string;
-            author: string;
-            influenceScore: number;
-            metrics: { likes: number; retweets: number; replies: number; quotes: number };
-            createdAt?: string;
-            url?: string;
-        }>;
-        baselineComparison: {
-            hashtagAvg: number;
-            engagementAvg: number;
-            sentimentAvg: { positive: number; neutral: number; negative: number };
-            deltas: {
-                hashtagDelta: number;
-                engagementDelta: number;
-                sentimentDelta: { positive: number; neutral: number; negative: number };
-            };
-        };
-    } | null>(null);
-    const [sentimentLoading, setSentimentLoading] = useState(false);
-    const [sentimentError, setSentimentError] = useState<string | null>(null);
-    const [refreshTick, setRefreshTick] = useState(0);
+    const [showConnectModal, setShowConnectModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
     const didInitRef = useRef(false);
 
@@ -141,58 +78,6 @@ export function SearchInput({
         return () => document.removeEventListener('pointerdown', handler);
     }, []);
 
-    useEffect(() => {
-        if (compact) return;
-        const trimmed = term.trim();
-        if (!trimmed) return;
-        const interval = setInterval(() => {
-            setRefreshTick((v) => v + 1);
-        }, 30_000);
-        return () => clearInterval(interval);
-    }, [term, compact]);
-
-    useEffect(() => {
-        if (compact) return;
-        const trimmed = term.trim();
-        if (!trimmed || trimmed.length < 2) {
-            setSentiment(null);
-            setSentimentError(null);
-            return;
-        }
-        const controller = new AbortController();
-        let active = true;
-        setSentimentLoading(true);
-        const timer = setTimeout(async () => {
-            try {
-                const data = await api.getJson<XSentimentResponse>('/x-sentiment', {
-                    query: { q: trimmed, chain },
-                    signal: controller.signal,
-                });
-                if (active) {
-                    setSentiment(data);
-                    setSentimentError(null);
-                }
-            } catch (e: unknown) {
-                if (!active) return;
-                if ((e as { name?: string }).name === 'AbortError') return;
-                const msg =
-                    e instanceof ApiError
-                        ? getApiErrorField(e.body, "details") || getApiErrorField(e.body, "error") || e.message
-                        : e instanceof Error
-                        ? e.message
-                        : String(e);
-                setSentimentError(msg);
-            } finally {
-                if (active) setSentimentLoading(false);
-            }
-        }, 600);
-        return () => {
-            active = false;
-            clearTimeout(timer);
-            controller.abort();
-        };
-    }, [term, chain, compact, refreshTick]);
-
     const selectedLabel = useMemo(
         () => CHAINS.find((c) => c.value === chain)?.label ?? 'Select Chain',
         [chain]
@@ -201,6 +86,10 @@ export function SearchInput({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!term.trim()) return;
+        if (!isConnected || !address) {
+            setShowConnectModal(true);
+            return;
+        }
         setIsLoading(true);
         if (onSearch) {
             onSearch(term);
@@ -343,78 +232,33 @@ export function SearchInput({
                 )}
                 </div>
             </form>
-            {!compact && term.trim() && (
-                <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-xl p-4 space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#B0B0B0]">
-                        <span>Social Sentiment (X)</span>
-                        <span>{sentimentLoading ? 'Updating...' : sentiment?.fetchedAt ? new Date(sentiment.fetchedAt).toLocaleTimeString() : 'Idle'}</span>
-                    </div>
-                    {sentimentError && (
-                        <div className="text-xs text-neon">{sentimentError}</div>
-                    )}
-                    {sentiment && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <div className="text-sm font-medium text-[#E6E6E6]">Hashtag volume</div>
-                                    <div className="text-xs text-[#B0B0B0]">
-                                        Total {sentiment.hashtagTotals.reduce((sum, h) => sum + h.count, 0)} • Baseline {sentiment.baselineComparison.hashtagAvg} • Δ {sentiment.baselineComparison.deltas.hashtagDelta}
-                                    </div>
-                                    <div className="space-y-1 text-xs text-[#B0B0B0]">
-                                        {sentiment.hashtagTotals.slice(-4).map((h) => (
-                                            <div key={h.bucket} className="flex items-center justify-between">
-                                                <span>{h.bucket}</span>
-                                                <span>{h.count}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="text-sm font-medium text-[#E6E6E6]">Sentiment split</div>
-                                    <div className="text-xs text-[#B0B0B0]">
-                                        Positive {sentiment.sentimentPercentages.positive}% • Neutral {sentiment.sentimentPercentages.neutral}% • Negative {sentiment.sentimentPercentages.negative}%
-                                    </div>
-                                    <div className="text-xs text-[#B0B0B0]">
-                                        Baseline {sentiment.baselineComparison.sentimentAvg.positive}% / {sentiment.baselineComparison.sentimentAvg.neutral}% / {sentiment.baselineComparison.sentimentAvg.negative}%
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="text-sm font-medium text-[#E6E6E6]">Engagement trend</div>
-                                <div className="text-xs text-[#B0B0B0]">
-                                    Likes {sentiment.engagementTotals.likes} • Retweets {sentiment.engagementTotals.retweets} • Replies {sentiment.engagementTotals.replies}
-                                </div>
-                                <div className="space-y-1 text-xs text-[#B0B0B0]">
-                                    {sentiment.engagementTrend.slice(-4).map((e) => (
-                                        <div key={e.bucket} className="flex items-center justify-between">
-                                            <span>{e.bucket}</span>
-                                            <span>{e.likes + e.retweets + e.replies + e.quotes}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="text-sm font-medium text-[#E6E6E6]">Top influential posts</div>
-                                <div className="space-y-2">
-                                    {sentiment.topInfluentialPosts.slice(0, 3).map((post) => (
-                                        <a
-                                            key={post.id}
-                                            href={post.url || '#'}
-                                            target={post.url ? '_blank' : undefined}
-                                            rel={post.url ? 'noreferrer' : undefined}
-                                            className="block text-xs text-[#B0B0B0] border border-[#2A2A2A] rounded-lg px-3 py-2 hover:border-neon/30 hover:bg-white/5 transition-all"
-                                        >
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="truncate">{post.author}</span>
-                                                <span>Influence {post.influenceScore}</span>
-                                            </div>
-                                            <div className="mt-1 line-clamp-2">{post.text}</div>
-                                        </a>
-                                    ))}
-                                </div>
-                            </div>
+            {showConnectModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[#1A1A1A] border border-neon/20 rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-white mb-2">Connect Wallet</h3>
+                        <p className="text-sm text-[#B0B0B0] mb-4">
+                            Connect your wallet to run trust analysis. Searches use credits.
+                        </p>
+                        <div className="flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    appKit.open();
+                                    setShowConnectModal(false);
+                                }}
+                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-neon/20 bg-neon/10 hover:bg-neon/20 text-neon text-sm font-medium transition-colors"
+                            >
+                                Connect Wallet
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowConnectModal(false)}
+                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-[#2A2A2A] bg-[#1F1F1F] hover:bg-[#262626] text-[#E6E6E6] text-sm font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </div>

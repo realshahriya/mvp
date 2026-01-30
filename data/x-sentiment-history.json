@@ -1,0 +1,158 @@
+{
+  "1:vitalik.eth": [
+    {
+      "ts": "2026-01-30T16:59:43.573Z",
+      "hashtagTotal": 110,
+      "engagementTotal": 12906,
+      "sentiment": {
+        "positive": 62,
+        "neutral": 0,
+        "negative": 38
+      }
+    }
+  ],
+  "11155111:vita": [
+    {
+      "ts": "2026-01-30T17:09:10.136Z",
+      "hashtagTotal": 33,
+      "engagementTotal": 10704,
+      "sentiment": {
+        "positive": 91,
+        "neutral": 0,
+        "negative": 9
+      }
+    }
+  ],
+  "11155111:vitali": [
+    {
+      "ts": "2026-01-30T17:09:12.628Z",
+      "hashtagTotal": 0,
+      "engagementTotal": 4843,
+      "sentiment": {
+        "positive": 100,
+        "neutral": 0,
+        "negative": 0
+      }
+    }
+  ],
+  "11155111:vitalik": [
+    {
+      "ts": "2026-01-30T17:09:13.519Z",
+      "hashtagTotal": 281,
+      "engagementTotal": 24699,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 3,
+        "negative": 97
+      }
+    }
+  ],
+  "11155111:vitalik.": [
+    {
+      "ts": "2026-01-30T17:09:27.280Z",
+      "hashtagTotal": 448,
+      "engagementTotal": 27806,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    }
+  ],
+  "11155111:vitalik.s": [
+    {
+      "ts": "2026-01-30T17:09:31.547Z",
+      "hashtagTotal": 332,
+      "engagementTotal": 21252,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    }
+  ],
+  "11155111:vitalik.eth": [
+    {
+      "ts": "2026-01-30T17:09:33.891Z",
+      "hashtagTotal": 123,
+      "engagementTotal": 12165,
+      "sentiment": {
+        "positive": 64,
+        "neutral": 0,
+        "negative": 36
+      }
+    },
+    {
+      "ts": "2026-01-30T17:10:34.754Z",
+      "hashtagTotal": 380,
+      "engagementTotal": 22624,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    },
+    {
+      "ts": "2026-01-30T17:11:34.755Z",
+      "hashtagTotal": 0,
+      "engagementTotal": 8552,
+      "sentiment": {
+        "positive": 100,
+        "neutral": 0,
+        "negative": 0
+      }
+    },
+    {
+      "ts": "2026-01-30T17:12:34.754Z",
+      "hashtagTotal": 241,
+      "engagementTotal": 22107,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    },
+    {
+      "ts": "2026-01-30T17:13:58.751Z",
+      "hashtagTotal": 435,
+      "engagementTotal": 28032,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    },
+    {
+      "ts": "2026-01-30T17:15:04.750Z",
+      "hashtagTotal": 173,
+      "engagementTotal": 15764,
+      "sentiment": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 100
+      }
+    },
+    {
+      "ts": "2026-01-30T17:16:33.907Z",
+      "hashtagTotal": 0,
+      "engagementTotal": 832,
+      "sentiment": {
+        "positive": 100,
+        "neutral": 0,
+        "negative": 0
+      }
+    }
+  ],
+  "11155111:vi": [
+    {
+      "ts": "2026-01-30T17:17:49.450Z",
+      "hashtagTotal": 27,
+      "engagementTotal": 5387,
+      "sentiment": {
+        "positive": 82,
+        "neutral": 0,
+        "negative": 18
+      }
+    }
+  ]
+}

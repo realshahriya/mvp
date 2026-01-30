@@ -32,6 +32,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "@base-org/account": false,
+      "@coinbase/wallet-sdk": false,
+      "@gemini-wallet/core": false,
+      "@metamask/sdk": false,
+      "@walletconnect/ethereum-provider": false,
+      "porto/internal": false,
+      porto: false,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
