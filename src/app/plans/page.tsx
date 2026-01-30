@@ -65,9 +65,16 @@ function PlansContent({ address }: { address: string }) {
     return (
         <div className="p-6 space-y-6 w-full">
             <div className="flex items-start justify-between gap-6 flex-wrap">
-                <div>
-                    <h1 className="text-3xl font-bold text-[#E6E6E6] mb-2 font-sans">Plans</h1>
-                    <p className="text-[#B0B0B0] text-sm">Choose what fits your rollout stage</p>
+                <div className="space-y-2">
+                    <div>
+                        <h1 className="text-3xl font-bold text-[#E6E6E6] mb-1 font-sans">Plans</h1>
+                        <p className="text-[#B0B0B0] text-sm">Choose what fits your rollout stage</p>
+                    </div>
+                    <div className="inline-flex items-center rounded-full px-3 py-1 bg-amber-500/10 border border-amber-500/30">
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-amber-200">
+                            All plans are free on testnet for testing purposes
+                        </span>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-[#888] text-sm">Billing</span>
