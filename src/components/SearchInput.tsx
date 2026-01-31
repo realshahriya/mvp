@@ -11,6 +11,7 @@ import { appKit } from '@/lib/walletConfig';
 const DEFAULT_CHAIN_STORAGE_KEY = "cencera_default_chain";
 const DEFAULT_TESTNET_CHAIN = "11155111";
 type ChainOption = { value: string; label: string; disabled?: boolean };
+type DropdownPosition = { top: number; left: number; width: number };
 const CHAINS: ChainOption[] = [
     { value: '11155111', label: 'Ethereum Sepolia' },
     { value: '97', label: 'BNB Testnet' },
@@ -44,7 +45,9 @@ export function SearchInput({
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
     const [showConnectModal, setShowConnectModal] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
+    const buttonRef = useRef<HTMLButtonElement | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
     const didInitRef = useRef(false);
 
     useEffect(() => {
@@ -71,12 +74,42 @@ export function SearchInput({
 
     useEffect(() => {
         const handler = (e: MouseEvent | PointerEvent) => {
-            if (!dropdownRef.current) return;
-            if (!dropdownRef.current.contains(e.target as Node)) setOpen(false);
+            const target = e.target as Node;
+            if (buttonRef.current && buttonRef.current.contains(target)) return;
+            if (menuRef.current && menuRef.current.contains(target)) return;
+            setOpen(false);
         };
         document.addEventListener('pointerdown', handler);
         return () => document.removeEventListener('pointerdown', handler);
     }, []);
+
+    useEffect(() => {
+        if (!open) {
+            setDropdownPosition(null);
+            return;
+        }
+        const updatePosition = () => {
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
+            const viewportWidth = window.innerWidth || 0;
+            const padding = 16;
+            const left = Math.max(padding, rect.left);
+            const right = Math.min(viewportWidth - padding, rect.right);
+            const width = right - left;
+            setDropdownPosition({
+                top: rect.bottom + 8,
+                left,
+                width: width > 0 ? width : rect.width,
+            });
+        };
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [open]);
 
     const selectedLabel = useMemo(
         () => CHAINS.find((c) => c.value === chain)?.label ?? 'Select Chain',
@@ -145,9 +178,10 @@ export function SearchInput({
                     compact ? "py-0 bg-transparent border-transparent ring-0" : ""
                 )}>
                 {!compact && (
-                    <div ref={dropdownRef} className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
+                    <div className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
                         <button
                             type="button"
+                            ref={buttonRef}
                             onClick={() => setOpen((v) => !v)}
                             onKeyDown={onKeyDown}
                             className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-[#C7C7C7] focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-[#E6E6E6]"
@@ -158,13 +192,19 @@ export function SearchInput({
                             <ChevronDown className={twMerge("w-4 h-4 transition-transform", open ? "rotate-180" : "")} />
                         </button>
                         <AnimatePresence>
-                            {open && (
+                            {open && dropdownPosition && (
                                 <motion.div
+                                    ref={menuRef}
                                     initial={{ opacity: 0, y: -6, scale: 0.98 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: -6, scale: 0.98 }}
                                     transition={{ duration: 0.16, ease: "easeOut" }}
-                                    className="absolute left-2 right-2 sm:left-0 sm:right-0 top-full z-50 mt-2"
+                                    className="fixed z-50"
+                                    style={{
+                                        top: dropdownPosition.top,
+                                        left: dropdownPosition.left,
+                                        width: dropdownPosition.width,
+                                    }}
                                 >
                                     <div className="rounded-lg border border-[#2A2A2A] bg-[#161616]/90 backdrop-blur-sm shadow-xl">
                                         <ul role="listbox" className="max-h-72 overflow-auto py-1 overscroll-contain">

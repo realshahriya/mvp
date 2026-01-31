@@ -26,16 +26,14 @@ try {
 }
 
 const uri = process.env.DB_CONNECTION;
-console.log('Testing DB Connection...');
-console.log('URI present:', !!uri);
+console.log('DB URI present:', !!uri);
 
 if (!uri || uri.includes('<db_password>')) {
     console.error('ERROR: DB_CONNECTION contains placeholder <db_password> or is missing.');
-    console.error('Current URI:', uri);
     process.exit(1);
 }
 
-async function test() {
+async function testConnection() {
     try {
         console.log('Connecting to MongoDB...');
         await mongoose.connect(uri);
@@ -55,4 +53,37 @@ async function test() {
     }
 }
 
-test();
+async function seedDemoCredits(count = 500) {
+    try {
+        console.log(`Seeding ${count} demo credit accounts...`);
+        await mongoose.connect(uri);
+        const collection = mongoose.connection.collection('user_credits');
+        const now = new Date();
+        const docs = [];
+        for (let i = 0; i < count; i++) {
+            docs.push({
+                walletAddress: `demo_wallet_${i.toString().padStart(4, '0')}`,
+                balance: 0,
+                plan: 'free',
+                billingCycleStart: now,
+                billingPeriod: 'monthly',
+                planExpiresAt: null,
+                updatedAt: now,
+            });
+        }
+        const result = await collection.insertMany(docs, { ordered: false });
+        console.log(`Inserted ${Object.keys(result.insertedIds).length} demo accounts.`);
+        await mongoose.disconnect();
+        process.exit(0);
+    } catch (error) {
+        console.error('Seeding demo credits failed:', error.message || error);
+        process.exit(1);
+    }
+}
+
+const mode = process.argv[2] || 'test';
+if (mode === 'seed-demo-credits') {
+    seedDemoCredits(500);
+} else {
+    testConnection();
+}
