@@ -2,7 +2,9 @@ import { Globe, Zap } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
 import { dbConnect, ScanResultModel, CreditModel } from "@/lib/db";
 
-const TOTAL_CHAIN_SUPPORTS = 30;
+export const revalidate = 60;
+
+const SUPPORTED_CHAIN_COUNT = 10;
 
 export default async function Home() {
   let totalSearches = 0;
@@ -93,13 +95,13 @@ export default async function Home() {
                 Chain Support
               </h3>
               <p className="text-xs text-[#6F6F6F]">
-                Networks connected across EVM and non-EVM.
+                Networks currently available in Quick Analysis chain dropdown.
               </p>
             </div>
             <Globe className="w-8 h-8 text-neon" />
           </div>
           <div className="text-4xl font-mono font-semibold text-neon">
-            {TOTAL_CHAIN_SUPPORTS}
+            {SUPPORTED_CHAIN_COUNT}
           </div>
         </div>
       </div>
