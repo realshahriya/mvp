@@ -8,40 +8,42 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Syne', 'sans-serif'],
+                sans: ['Poppins', 'system-ui', 'sans-serif'],
                 mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
-                // Brand Colors - Matching Official Website
                 void: '#111111',
                 surface: '#161616',
-                neon: '#7DD3FC',
-                'neon-dark': '#5FBEE8',
-                'neon-light': '#A3E5FF',
-
-                // Secondary Brand Colors from Website
-                'brand-purple': '#A855F7',   // Purple/Magenta (API Platform, Entity Analysis)
-                'brand-pink': '#EC4899',     // Pink (Interactive Sandbox, Transaction Simulator)
-                'brand-orange': '#F59E0B',   // Orange/Amber (dApp Connection Guard)
-                'brand-green': '#10B981',    // Green (Success states, Trust Scoring)
-
+                neon: '#92DCE5',
+                'neon-dark': '#7DCD85',
+                'neon-light': '#88D5B5',
+                'brand-primary': '#92DCE5',
+                'brand-secondary': '#7DCD85',
+                'brand-accent-mint': '#88D5B5',
+                'brand-soft': '#F3E8EE',
+                'brand-base': '#111111',
+                'brand-text-primary': '#E6E6E6',
+                'brand-text-secondary': '#C7C7C7',
+                'brand-text-muted': '#B0B0B0',
+                'brand-purple': '#A855F7',
+                'brand-pink': '#EC4899',
+                'brand-orange': '#F59E0B',
+                'brand-green': '#10B981',
                 danger: '#FF2A3D',
                 safe: '#00FF94',
                 subtle: '#222222',
-                'cyber-border': 'rgba(125, 211, 252, 0.14)',
+                'cyber-border': 'rgba(146, 220, 229, 0.14)',
                 'cyber-card': 'rgba(17, 17, 17, 0.85)',
-
-                // Trust Score Colors
-                'trust-100': '#00F0FF',  // Excellent - Cyan
-                'trust-80': '#00FF94',   // Good - Green
-                'trust-60': '#FFD700',   // Medium - Yellow
-                'trust-40': '#FFA500',   // Low - Orange
-                'trust-20': '#FF2A3D',   // Critical - Red
+                'trust-100': '#00F0FF',
+                'trust-80': '#00FF94',
+                'trust-60': '#FFD700',
+                'trust-40': '#FFA500',
+                'trust-20': '#FF2A3D',
             },
             backgroundImage: {
-                'grid-pattern': "linear-gradient(to right, rgba(125, 211, 252, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(125, 211, 252, 0.03) 1px, transparent 1px)",
-                'brand-gradient': 'linear-gradient(135deg, #7DD3FC 0%, #5FBEE8 100%)',
-                'brand-gradient-radial': 'radial-gradient(circle, rgba(125,211,252,0.12) 0%, transparent 70%)',
+                'grid-pattern': "linear-gradient(to right, rgba(146, 220, 229, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(146, 220, 229, 0.03) 1px, transparent 1px)",
+                'brand-gradient': 'linear-gradient(135deg, rgba(146, 220, 229, 0.3) 0%, rgba(243, 232, 238, 0.1) 100%)',
+                'brand-gradient-radial': 'radial-gradient(circle, rgba(146,220,229,0.12) 0%, transparent 70%)',
             },
             animation: {
                 scanline: 'scanline 8s linear infinite',

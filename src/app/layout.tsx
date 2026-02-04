@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Syne, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarClient } from "@/components/SidebarClient";
 import { WalletProvider } from "@/components/WalletProvider";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
-
-const syne = Syne({
-  variable: "--font-syne",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "CENCERA - Universal Trust Score Layer",
@@ -38,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${syne.variable} ${jetbrainsMono.variable} antialiased text-[#E6E6E6] flex min-h-screen font-sans selection:bg-neon selection:text-[#111111]`}
+        className="antialiased text-[#E6E6E6] flex min-h-screen font-sans selection:bg-neon selection:text-[#111111]"
       >
         <div className="fixed-background" />
         <WalletProvider>

@@ -24,27 +24,31 @@ export default async function Home() {
   return (
     <div className="p-6 space-y-8 relative z-10 overflow-y-auto">
       <div className="text-center space-y-4 py-12">
-        <h1 className="text-5xl md:text-6xl font-bold text-[#E6E6E6] mb-4 font-sans">
+        <h1 className="text-5xl md:text-6xl font-bold text-[#E6E6E6] mb-4 font-sans tracking-[0.18em] uppercase">
           Universal Trust Score Layer
         </h1>
         <p className="text-[#B0B0B0] text-lg max-w-2xl mx-auto leading-relaxed">
           Real-time blockchain intelligence and threat detection across multiple chains
         </p>
         <div className="flex items-center justify-center gap-2 pt-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent via-neon/60 to-transparent"></div>
-          <div className="w-2 h-2 rounded-full bg-neon shadow-neon"></div>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent via-neon/60 to-transparent"></div>
+          <div className="h-px w-12 bg-gradient-to-r from-transparent via-brand-primary/40 to-transparent"></div>
+          <div className="w-2 h-2 rounded-full bg-brand-primary shadow-neon"></div>
+          <div className="h-px w-12 bg-gradient-to-l from-transparent via-brand-primary/40 to-transparent"></div>
         </div>
       </div>
 
-      <div id="quick-analysis" className="bg-[#1A1A1A]/90 border border-[#2A2A2A] rounded-2xl p-8 hover:border-neon/25 transition-all">
+      <div id="quick-analysis" className="bg-[#1A1A1A]/90 border border-[#2A2A2A] rounded-2xl p-8 hover:border-brand-primary/40 transition-all">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center">
-            <div className="w-12 h-12 bg-neon/10 rounded-xl flex items-center justify-center mx-auto mb-4 border border-neon/20">
-              <Zap className="w-6 h-6 text-neon" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border border-brand-primary/30 bg-gradient-to-br from-brand-primary/20 to-brand-soft/10">
+              <Zap className="w-6 h-6 text-brand-primary" />
             </div>
-            <h2 className="text-2xl font-bold text-[#E6E6E6] mb-2 font-sans">Quick Analysis</h2>
-            <p className="text-[#C7C7C7] text-sm">Test wallet or contract addresses across multiple chains instantly</p>
+            <h2 className="text-2xl font-bold text-[#E6E6E6] mb-1 font-sans uppercase tracking-[0.18em]">
+              Quick Analysis
+            </h2>
+            <p className="text-[#C7C7C7] text-sm">
+              Test wallet or contract addresses across multiple chains instantly
+            </p>
           </div>
 
           <div className="space-y-3">

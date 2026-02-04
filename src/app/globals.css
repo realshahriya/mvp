@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,26 +9,26 @@
     background: rgba(17, 17, 17, 0.9);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 0 18px rgba(125, 211, 252, 0.08);
+    box-shadow: 0 0 18px rgba(146, 220, 229, 0.08);
   }
 
   .text-outline {
-    -webkit-text-stroke: 1px rgba(125, 211, 252, 0.3);
+    -webkit-text-stroke: 1px rgba(146, 220, 229, 0.3);
     color: transparent;
   }
 
   .neon-border {
-    border: 1px solid #7DD3FC;
-    box-shadow: 0 0 15px rgba(125, 211, 252, 0.35), inset 0 0 15px rgba(125, 211, 252, 0.15);
+    border: 1px solid #92DCE5;
+    box-shadow: 0 0 15px rgba(146, 220, 229, 0.35), inset 0 0 15px rgba(146, 220, 229, 0.15);
   }
 
   .neon-glow {
-    box-shadow: 0 0 20px rgba(125, 211, 252, 0.3), 0 0 40px rgba(125, 211, 252, 0.12);
+    box-shadow: 0 0 20px rgba(146, 220, 229, 0.3), 0 0 40px rgba(146, 220, 229, 0.12);
   }
 
   .grid-bg {
-    background-image: linear-gradient(to right, rgba(125, 211, 252, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(125, 211, 252, 0.03) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(146, 220, 229, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(146, 220, 229, 0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
   }
@@ -39,11 +38,11 @@
   }
 
   .brand-gradient {
-    background: linear-gradient(135deg, #7DD3FC 0%, #5FBEE8 100%);
+    background: linear-gradient(135deg, rgba(146, 220, 229, 0.3) 0%, rgba(243, 232, 238, 0.1) 100%);
   }
 
   .brand-gradient-text {
-    background: linear-gradient(135deg, #7DD3FC 0%, #5FBEE8 100%);
+    background: linear-gradient(135deg, #92DCE5 0%, #F3E8EE 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -53,7 +52,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   color: #E6E6E6;
   overflow-x: hidden;
   cursor: default;
@@ -105,12 +104,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #7DD3FC;
-  box-shadow: 0 0 10px rgba(125, 211, 252, 0.5);
+  background: #92DCE5;
+  box-shadow: 0 0 10px rgba(146, 220, 229, 0.5);
 }
 
 ::selection {
-  background: rgba(125, 211, 252, 0.25);
+  background: rgba(146, 220, 229, 0.25);
   color: #111111;
 }
 
