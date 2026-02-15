@@ -82,18 +82,16 @@ function PlansContent({ address }: { address: string }) {
                         <button
                             type="button"
                             onClick={() => setBillingPeriod("monthly")}
-                            className={`w-1/2 h-full rounded-full font-semibold text-sm transition-colors ${
-                                billingPeriod === "monthly" ? "bg-neon text-black" : "text-[#BBB]"
-                            }`}
+                            className={`w-1/2 h-full rounded-full font-semibold text-sm transition-colors ${billingPeriod === "monthly" ? "bg-neon text-black" : "text-[#BBB]"
+                                }`}
                         >
                             Monthly
                         </button>
                         <button
                             type="button"
                             onClick={() => setBillingPeriod("annual")}
-                            className={`w-1/2 h-full rounded-full font-semibold text-sm transition-colors ${
-                                billingPeriod === "annual" ? "bg-neon text-black" : "text-[#BBB]"
-                            }`}
+                            className={`w-1/2 h-full rounded-full font-semibold text-sm transition-colors ${billingPeriod === "annual" ? "bg-neon text-black" : "text-[#BBB]"
+                                }`}
                         >
                             Annually
                         </button>
@@ -146,11 +144,10 @@ function PlansContent({ address }: { address: string }) {
                     const isDowngradeToFree = key === "free" && currentPlan !== "free";
 
                     return (
-                        <div key={key} className={`relative p-6 rounded-2xl border flex flex-col h-full transition-all ${
-                            isCurrent ? "bg-[#1A1A1A] border-neon shadow-[0_0_20px_rgba(0,255,163,0.1)]" :
+                        <div key={key} className={`relative p-6 rounded-2xl border flex flex-col h-full transition-all ${isCurrent ? "bg-[#1A1A1A] border-neon shadow-[0_0_20px_rgba(0,255,163,0.1)]" :
                             isGrowth ? "bg-[#0A0A0A] border-[#333] hover:border-[#555]" :
-                            "bg-[#0A0A0A] border-[#222] hover:border-[#444]"
-                        }`}>
+                                "bg-[#0A0A0A] border-[#222] hover:border-[#444]"
+                            }`}>
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-xl font-bold text-white">{plan.name}</h3>
                                 <div className="text-right">
@@ -199,19 +196,14 @@ function PlansContent({ address }: { address: string }) {
 
                             <button
                                 onClick={() => {
-                                    if (key === "pro") {
-                                        window.location.href = "mailto:sales@cencera.io";
-                                        return;
-                                    }
                                     if (isDowngradeToFree) return;
                                     handleUpgrade(key);
                                 }}
                                 disabled={isCurrent || upgrading !== null || isDowngradeToFree}
-                                className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${
-                                    isCurrent || isDowngradeToFree
-                                        ? "bg-[#222] text-[#666] cursor-default"
-                                        : "bg-white text-black hover:bg-neon hover:text-black"
-                                }`}
+                                className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${isCurrent || isDowngradeToFree
+                                    ? "bg-[#222] text-[#666] cursor-default"
+                                    : "bg-white text-black hover:bg-neon hover:text-black"
+                                    }`}
                             >
                                 {isCurrent
                                     ? "Current Plan"
@@ -219,9 +211,7 @@ function PlansContent({ address }: { address: string }) {
                                         ? "Unavailable"
                                         : upgrading === key
                                             ? "Upgrading..."
-                                            : key === "pro"
-                                                ? "Contact Sales"
-                                                : "Upgrade"}
+                                            : "Upgrade"}
                             </button>
                         </div>
                     );

@@ -23,6 +23,7 @@ const CHAINS: ChainOption[] = [
     { value: '4002', label: 'Fantom Testnet' },
     { value: '300', label: 'zkSync Sepolia Testnet' },
     { value: '31', label: 'Rootstock Testnet' },
+    { value: 'coming_soon', label: 'Coming Soon', disabled: true },
 ];
 const ENABLED_CHAIN_VALUES = new Set(CHAINS.filter((c) => !c.disabled).map((c) => c.value));
 
@@ -177,99 +178,99 @@ export function SearchInput({
                     "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-[#2A2A2A] ring-1 ring-[#2A2A2A] group-focus-within:ring-neon/40",
                     compact ? "py-0 bg-transparent border-transparent ring-0" : ""
                 )}>
-                {!compact && (
-                    <div className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
-                        <button
-                            type="button"
-                            ref={buttonRef}
-                            onClick={() => setOpen((v) => !v)}
-                            onKeyDown={onKeyDown}
-                            className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-[#C7C7C7] focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-[#E6E6E6]"
-                            aria-haspopup="listbox"
-                            aria-expanded={open}
-                        >
-                            <span className="truncate">{selectedLabel}</span>
-                            <ChevronDown className={twMerge("w-4 h-4 transition-transform", open ? "rotate-180" : "")} />
-                        </button>
-                        <AnimatePresence>
-                            {open && dropdownPosition && (
-                                <motion.div
-                                    ref={menuRef}
-                                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                                    transition={{ duration: 0.16, ease: "easeOut" }}
-                                    className="fixed z-50"
-                                    style={{
-                                        top: dropdownPosition.top,
-                                        left: dropdownPosition.left,
-                                        width: dropdownPosition.width,
-                                    }}
-                                >
-                                    <div className="rounded-lg border border-[#2A2A2A] bg-[#161616]/90 backdrop-blur-sm shadow-xl">
-                                        <ul role="listbox" className="max-h-72 overflow-auto py-1 overscroll-contain">
-                                            {CHAINS.map((c, i) => {
-                                                const isActive = i === activeIndex;
-                                                const isSelected = c.value === chain;
-                                                const baseClasses = c.disabled
-                                                    ? "text-[#8A8A8A] cursor-not-allowed"
-                                                    : "text-[#C7C7C7] hover:text-[#E6E6E6] hover:bg-white/5 cursor-pointer";
-                                                return (
-                                                    <li
-                                                        key={c.value}
-                                                        role="option"
-                                                        aria-selected={isSelected}
-                                                        className={twMerge("flex items-center justify-between px-3 py-3 sm:py-2 text-sm", baseClasses, isActive && !c.disabled ? "bg-white/5" : "")}
-                                                        onMouseEnter={() => !c.disabled && setActiveIndex(i)}
-                                                        onTouchStart={() => !c.disabled && setActiveIndex(i)}
-                                                        onClick={() => {
-                                                            if (c.disabled) return;
-                                                            setChain(c.value);
-                                                            setActiveIndex(i);
-                                                            setOpen(false);
-                                                        }}
-                                                    >
-                                                        <span className="truncate">{c.label}</span>
-                                                        {isSelected && <Check className="w-4 h-4 text-neon" />}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                )}
+                    {!compact && (
+                        <div className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
+                            <button
+                                type="button"
+                                ref={buttonRef}
+                                onClick={() => setOpen((v) => !v)}
+                                onKeyDown={onKeyDown}
+                                className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-[#C7C7C7] focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-[#E6E6E6]"
+                                aria-haspopup="listbox"
+                                aria-expanded={open}
+                            >
+                                <span className="truncate">{selectedLabel}</span>
+                                <ChevronDown className={twMerge("w-4 h-4 transition-transform", open ? "rotate-180" : "")} />
+                            </button>
+                            <AnimatePresence>
+                                {open && dropdownPosition && (
+                                    <motion.div
+                                        ref={menuRef}
+                                        initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                        transition={{ duration: 0.16, ease: "easeOut" }}
+                                        className="fixed z-50"
+                                        style={{
+                                            top: dropdownPosition.top,
+                                            left: dropdownPosition.left,
+                                            width: dropdownPosition.width,
+                                        }}
+                                    >
+                                        <div className="rounded-lg border border-[#2A2A2A] bg-[#161616]/90 backdrop-blur-sm shadow-xl">
+                                            <ul role="listbox" className="max-h-72 overflow-auto py-1 overscroll-contain">
+                                                {CHAINS.map((c, i) => {
+                                                    const isActive = i === activeIndex;
+                                                    const isSelected = c.value === chain;
+                                                    const baseClasses = c.disabled
+                                                        ? "text-[#8A8A8A] cursor-not-allowed"
+                                                        : "text-[#C7C7C7] hover:text-[#E6E6E6] hover:bg-white/5 cursor-pointer";
+                                                    return (
+                                                        <li
+                                                            key={c.value}
+                                                            role="option"
+                                                            aria-selected={isSelected}
+                                                            className={twMerge("flex items-center justify-between px-3 py-3 sm:py-2 text-sm", baseClasses, isActive && !c.disabled ? "bg-white/5" : "")}
+                                                            onMouseEnter={() => !c.disabled && setActiveIndex(i)}
+                                                            onTouchStart={() => !c.disabled && setActiveIndex(i)}
+                                                            onClick={() => {
+                                                                if (c.disabled) return;
+                                                                setChain(c.value);
+                                                                setActiveIndex(i);
+                                                                setOpen(false);
+                                                            }}
+                                                        >
+                                                            <span className="truncate">{c.label}</span>
+                                                            {isSelected && <Check className="w-4 h-4 text-neon" />}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
 
-                <div className="flex items-center gap-2 flex-1 min-w-0 px-2">
-                    <div className={twMerge("pl-1 text-[#B0B0B0] flex-shrink-0", compact ? "pl-2" : "")}>
-                        <Search className="w-4 h-4 md:w-5 md:h-5" />
+                    <div className="flex items-center gap-2 flex-1 min-w-0 px-2">
+                        <div className={twMerge("pl-1 text-[#B0B0B0] flex-shrink-0", compact ? "pl-2" : "")}>
+                            <Search className="w-4 h-4 md:w-5 md:h-5" />
+                        </div>
+                        <input
+                            type="text"
+                            value={term}
+                            onChange={(e) => setTerm(e.target.value)}
+                            className={twMerge(
+                                "flex-1 min-w-0 bg-transparent border-none text-[#E6E6E6] placeholder-[#8A8A8A] focus:outline-none focus:ring-0",
+                                compact ? "py-2 px-2 text-sm" : "py-3 px-3 text-base md:py-4 md:px-4 md:text-lg"
+                            )}
+                            placeholder={placeholder}
+                        />
                     </div>
-                    <input
-                        type="text"
-                        value={term}
-                        onChange={(e) => setTerm(e.target.value)}
-                        className={twMerge(
-                            "flex-1 min-w-0 bg-transparent border-none text-[#E6E6E6] placeholder-[#8A8A8A] focus:outline-none focus:ring-0",
-                            compact ? "py-2 px-2 text-sm" : "py-3 px-3 text-base md:py-4 md:px-4 md:text-lg"
-                        )}
-                        placeholder={placeholder}
-                    />
-                </div>
-                {!compact && (
-                    <button
-                        type="submit"
-                        disabled={!term.trim() || isLoading}
-                        className="w-full sm:w-auto mt-2 sm:mt-0 mr-0 sm:mr-2 p-3 sm:p-2 rounded-md bg-white/5 hover:bg-white/10 text-[#E6E6E6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                        {isLoading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <ArrowRight className="w-5 h-5 text-neon" />
-                        )}
-                    </button>
-                )}
+                    {!compact && (
+                        <button
+                            type="submit"
+                            disabled={!term.trim() || isLoading}
+                            className="w-full sm:w-auto mt-2 sm:mt-0 mr-0 sm:mr-2 p-3 sm:p-2 rounded-md bg-white/5 hover:bg-white/10 text-[#E6E6E6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <ArrowRight className="w-5 h-5 text-neon" />
+                            )}
+                        </button>
+                    )}
                 </div>
             </form>
             {showConnectModal && (

@@ -1,10 +1,10 @@
-import { Globe, Zap } from "lucide-react";
+import { Globe, Zap, ShieldAlert } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
 import { dbConnect, ScanResultModel, CreditModel } from "@/lib/db";
 
 export const revalidate = 60;
 
-const SUPPORTED_CHAIN_COUNT = 10;
+const SUPPORTED_CHAIN_COUNT = 18;
 
 export default async function Home() {
   let totalSearches = 0;
@@ -62,16 +62,16 @@ export default async function Home() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
-                Total Searches
+                Malicious CA Detected
               </h3>
               <p className="text-xs text-[#6F6F6F]">
-                All trust analyses completed on Cencera.
+                Across all supported networks.
               </p>
             </div>
-            <Zap className="w-8 h-8 text-neon" />
+            <ShieldAlert className="w-8 h-8 text-neon" />
           </div>
           <div className="text-4xl font-mono font-semibold text-neon">
-            {totalSearches.toLocaleString()}
+            2,145,832
           </div>
         </div>
 
@@ -98,9 +98,6 @@ export default async function Home() {
               <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
                 Chain Support
               </h3>
-              <p className="text-xs text-[#6F6F6F]">
-                Networks currently available in Quick Analysis chain dropdown.
-              </p>
             </div>
             <Globe className="w-8 h-8 text-neon" />
           </div>

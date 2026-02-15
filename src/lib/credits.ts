@@ -7,12 +7,13 @@ export type { PlanType };
 async function checkAndResetCredits(walletAddress: string) {
     await dbConnect();
     const normalizedAddress = walletAddress.toLowerCase();
-    
+
     const user = await CreditModel.findOne({ walletAddress: normalizedAddress });
     if (!user) return null;
 
     const now = new Date();
-    const plan = (user.plan as PlanType) || 'free';
+    const rawPlan = user.plan as PlanType;
+    const plan = PLANS[rawPlan] ? rawPlan : 'free';
 
     if (plan !== 'free' && user.planExpiresAt && now.getTime() > new Date(user.planExpiresAt).getTime()) {
         const limit = PLANS.free.limit;
@@ -65,7 +66,7 @@ export async function getUserCredits(walletAddress: string): Promise<{
 }> {
     await dbConnect();
     const normalizedAddress = walletAddress.toLowerCase();
-    
+
     // Check and reset first
     let user = await checkAndResetCredits(normalizedAddress);
 
@@ -80,7 +81,7 @@ export async function getUserCredits(walletAddress: string): Promise<{
             planExpiresAt: null,
             updatedAt: now
         });
-        
+
         await CreditTransactionModel.create({
             walletAddress: normalizedAddress,
             amount: PLANS.free.limit,
@@ -93,9 +94,9 @@ export async function getUserCredits(walletAddress: string): Promise<{
     const billingPeriod = user.billingPeriod ?? 'monthly';
     const planExpiresAt = user.planExpiresAt ?? null;
 
-    return { 
-        balance: user.balance, 
-        plan: user.plan as PlanType,
+    return {
+        balance: user.balance,
+        plan: (PLANS[user.plan as PlanType] ? user.plan : 'free') as PlanType,
         billingCycleStart: user.billingCycleStart,
         billingPeriod,
         planExpiresAt
@@ -150,7 +151,7 @@ export async function upgradePlan(
 ): Promise<boolean> {
     await dbConnect();
     const normalizedAddress = walletAddress.toLowerCase();
-    
+
     if (!PLANS[newPlan]) return false;
 
     try {
@@ -165,15 +166,15 @@ export async function upgradePlan(
 
         await CreditModel.findOneAndUpdate(
             { walletAddress: normalizedAddress },
-            { 
-                $set: { 
-                    plan: newPlan, 
+            {
+                $set: {
+                    plan: newPlan,
                     balance: limit,
                     billingCycleStart: now,
                     billingPeriod,
                     planExpiresAt,
-                    updatedAt: now 
-                } 
+                    updatedAt: now
+                }
             },
             { upsert: true, new: true }
         );

@@ -191,7 +191,7 @@ export function Sidebar() {
                             Testnet
                         </div>
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.2.1</b>
+                            <b>version: Alpha v0.2.15</b>
                         </div>
                     </div>
                 </div>
@@ -260,7 +260,7 @@ export function Sidebar() {
 
                     {/* Wallet Section */}
                     <div className="px-4 pb-4">
-                            {isConnected && address ? (
+                        {isConnected && address ? (
                             <div className="space-y-2">
                                 <Link
                                     href="/plans"
@@ -281,13 +281,13 @@ export function Sidebar() {
                                     <span className="font-medium text-neon">Profile</span>
                                 </Link>
                             </div>
-                            ) : (
+                        ) : (
                             <button
-                                    onClick={() => appKit.open()}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 hover:bg-neon/20 hover:border-neon/30 font-mono text-sm text-neon transition-all duration-300"
+                                onClick={() => appKit.open()}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-neon/20 bg-neon/10 hover:bg-neon/20 hover:border-neon/30 font-mono text-sm text-neon transition-all duration-300"
                             >
-                                    <Wallet className="w-5 h-5" />
-                                    <span className="font-medium">Connect Wallet</span>
+                                <Wallet className="w-5 h-5" />
+                                <span className="font-medium">Connect Wallet</span>
                             </button>
                         )}
                     </div>
@@ -306,7 +306,7 @@ export function Sidebar() {
                     {/* Footer */}
                     <div className="p-4 border-t border-subtle bg-black/20">
                         <div className="text-xs text-zinc-500 text-center font-mono">
-                            <b>version: Alpha v0.2.1</b>
+                            <b>version: Alpha v0.2.15</b>
                         </div>
                     </div>
                 </div>
@@ -391,8 +391,8 @@ export function Sidebar() {
                                 <textarea
                                     className="w-full h-32 bg-zinc-800/50 border border-white/5 rounded-xl p-4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-transparent resize-none transition-all duration-300"
                                     placeholder="Describe the issue or request: screen, steps, expected behavior…"
-                                value={feedbackText}
-                                onChange={(e) => { setFeedbackText(e.target.value); if (reportError) setReportError(null); }}
+                                    value={feedbackText}
+                                    onChange={(e) => { setFeedbackText(e.target.value); if (reportError) setReportError(null); }}
                                 />
                                 {reportError && (
                                     <div className="text-xs text-red-400">{reportError}</div>
@@ -413,48 +413,48 @@ export function Sidebar() {
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                onClick={async () => {
-                                    const trimmed = feedbackText.trim();
-                                    if (reportStatus === "sending") return;
-                                    if (trimmed.length < 3) {
-                                        setReportError("Please enter at least 3 characters");
-                                        return;
-                                    }
-                                    setReportStatus("sending");
-                                    try {
-                                        await api.postJson<unknown>("/report", {
-                                            body: {
-                                                type: feedbackType,
-                                                severity,
-                                                content: trimmed,
-                                                address: isConnected && attachWallet && address ? address : undefined
-                                            }
-                                        });
-                                        setReportStatus("sent");
-                                        setTimeout(() => {
-                                            setReportStatus("idle");
-                                            setFeedbackText("");
-                                            setReportError(null);
-                                            setShowFeedbackLocal(false);
-                                            router.replace(pathname);
-                                        }, 900);
-                                    } catch (e: unknown) {
-                                        if (e instanceof ApiError) {
-                                            let errMsg = "Unable to send. Try again.";
-                                            const code = getApiErrorField(e.body, "error");
-                                            if (code === "content_too_short") errMsg = "Please enter at least 3 characters";
-                                            else if (code === "telegram_not_configured") errMsg = "Telegram is not configured on the server";
-                                            else if (code === "telegram_failed") errMsg = getApiErrorField(e.body, "details") || "Telegram request failed";
-                                            setReportError(errMsg);
+                                    onClick={async () => {
+                                        const trimmed = feedbackText.trim();
+                                        if (reportStatus === "sending") return;
+                                        if (trimmed.length < 3) {
+                                            setReportError("Please enter at least 3 characters");
+                                            return;
                                         }
-                                        setReportStatus("error");
-                                        setTimeout(() => setReportStatus("idle"), 1500);
-                                    }
-                                }}
-                                className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={feedbackText.trim().length < 3 || reportStatus === "sending"}
+                                        setReportStatus("sending");
+                                        try {
+                                            await api.postJson<unknown>("/report", {
+                                                body: {
+                                                    type: feedbackType,
+                                                    severity,
+                                                    content: trimmed,
+                                                    address: isConnected && attachWallet && address ? address : undefined
+                                                }
+                                            });
+                                            setReportStatus("sent");
+                                            setTimeout(() => {
+                                                setReportStatus("idle");
+                                                setFeedbackText("");
+                                                setReportError(null);
+                                                setShowFeedbackLocal(false);
+                                                router.replace(pathname);
+                                            }, 900);
+                                        } catch (e: unknown) {
+                                            if (e instanceof ApiError) {
+                                                let errMsg = "Unable to send. Try again.";
+                                                const code = getApiErrorField(e.body, "error");
+                                                if (code === "content_too_short") errMsg = "Please enter at least 3 characters";
+                                                else if (code === "telegram_not_configured") errMsg = "Telegram is not configured on the server";
+                                                else if (code === "telegram_failed") errMsg = getApiErrorField(e.body, "details") || "Telegram request failed";
+                                                setReportError(errMsg);
+                                            }
+                                            setReportStatus("error");
+                                            setTimeout(() => setReportStatus("idle"), 1500);
+                                        }
+                                    }}
+                                    className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={feedbackText.trim().length < 3 || reportStatus === "sending"}
                                 >
-                                {reportStatus === "sending" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {reportStatus === "sending" ? "Sending..." : reportStatus === "sent" ? "Sent" : "Send Feedback"}
+                                    {reportStatus === "sending" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {reportStatus === "sending" ? "Sending..." : reportStatus === "sent" ? "Sent" : "Send Feedback"}
                                 </motion.button>
                             </div>
                         </motion.div>

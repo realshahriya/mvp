@@ -17,11 +17,11 @@ export const PLANS = {
         ]
     },
     basic: {
-        name: 'Growth',
-        price: 310,
-        annualPrice: 290,
+        name: 'Test Credits',
+        price: 0,
+        annualPrice: 0,
         limit: 12000,
-        description: 'Ship at scale.',
+        description: 'Ship with test credits.',
         badge: 'Most popular',
         stats: {
             response: '110ms',
@@ -31,23 +31,6 @@ export const PLANS = {
         features: [
             'Monitoring',
             'Priority support'
-        ]
-    },
-    pro: {
-        name: 'Enterprise',
-        price: null, // Custom
-        annualPrice: null,
-        limit: 100000,
-        description: 'Custom policies + SLA.',
-        badge: 'Max Support',
-        stats: {
-            response: '85ms',
-            coverage: 'Maximum',
-            signals: '92%'
-        },
-        features: [
-            'Dedicated infra',
-            'Onboarding'
         ]
     }
 } as const;
