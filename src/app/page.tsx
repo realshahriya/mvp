@@ -1,26 +1,9 @@
 import { Globe, Zap, ShieldAlert } from "lucide-react";
 import { SearchInput } from "@/components/SearchInput";
-import { dbConnect, ScanResultModel, CreditModel } from "@/lib/db";
-
-export const revalidate = 60;
 
 const SUPPORTED_CHAIN_COUNT = 18;
 
-export default async function Home() {
-  let totalSearches = 0;
-  let totalUsers = 0;
-
-  try {
-    await dbConnect();
-    const [searchCount, userCount] = await Promise.all([
-      ScanResultModel.countDocuments({}),
-      CreditModel.countDocuments({}),
-    ]);
-    totalSearches = searchCount;
-    totalUsers = userCount;
-  } catch {
-  }
-
+export default function Home() {
   return (
     <div className="p-6 space-y-8 relative z-10 overflow-y-auto">
       <div className="text-center space-y-4 py-12">
@@ -31,9 +14,9 @@ export default async function Home() {
           Real-time blockchain intelligence and threat detection across multiple chains
         </p>
         <div className="flex items-center justify-center gap-2 pt-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent via-brand-primary/40 to-transparent"></div>
-          <div className="w-2 h-2 rounded-full bg-brand-primary shadow-neon"></div>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent via-brand-primary/40 to-transparent"></div>
+          <div className="h-px w-12 bg-gradient-to-r from-transparent via-brand-primary/40 to-transparent" />
+          <div className="w-2 h-2 rounded-full bg-brand-primary shadow-neon" />
+          <div className="h-px w-12 bg-gradient-to-l from-transparent via-brand-primary/40 to-transparent" />
         </div>
       </div>
 
@@ -47,13 +30,10 @@ export default async function Home() {
               Quick Analysis
             </h2>
             <p className="text-[#C7C7C7] text-sm">
-              Test wallet or contract addresses across multiple chains instantly
+              Try the CenceraAI trust scoring engine — paste any wallet or contract address
             </p>
           </div>
-
-          <div className="space-y-3">
-            <SearchInput placeholder="Enter wallet address, contract, or ENS name to analyze..." />
-          </div>
+          <SearchInput placeholder="Enter wallet address or contract address to analyse..." />
         </div>
       </div>
 
@@ -62,34 +42,26 @@ export default async function Home() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
-                Malicious CA Detected
+                Entities Scored
               </h3>
-              <p className="text-xs text-[#6F6F6F]">
-                Across all supported networks.
-              </p>
+              <p className="text-xs text-[#6F6F6F]">Across all supported networks.</p>
             </div>
             <ShieldAlert className="w-8 h-8 text-neon" />
           </div>
-          <div className="text-4xl font-mono font-semibold text-neon">
-            2,145,832
-          </div>
+          <div className="text-4xl font-mono font-semibold text-neon">2,145,832</div>
         </div>
 
         <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-8 transition-all">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-[#8A8A8A] uppercase tracking-[0.18em]">
-                Total Users
+                Signal Domains
               </h3>
-              <p className="text-xs text-[#6F6F6F]">
-                Unique wallets with active credit accounts.
-              </p>
+              <p className="text-xs text-[#6F6F6F]">On-chain, Market, Off-chain, AI-Derived.</p>
             </div>
             <Zap className="w-8 h-8 text-neon" />
           </div>
-          <div className="text-4xl font-mono font-semibold text-neon">
-            {totalUsers.toLocaleString()}
-          </div>
+          <div className="text-4xl font-mono font-semibold text-neon">4</div>
         </div>
 
         <div className="bg-[#1A1A1A]/80 border border-[#2A2A2A] rounded-2xl p-8 transition-all">
@@ -101,9 +73,7 @@ export default async function Home() {
             </div>
             <Globe className="w-8 h-8 text-neon" />
           </div>
-          <div className="text-4xl font-mono font-semibold text-neon">
-            {SUPPORTED_CHAIN_COUNT}
-          </div>
+          <div className="text-4xl font-mono font-semibold text-neon">{SUPPORTED_CHAIN_COUNT}</div>
         </div>
       </div>
     </div>

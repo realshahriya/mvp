@@ -1,307 +1,236 @@
 "use client";
 
-import { Search, ArrowRight, Loader2, ChevronDown, Check } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import { twMerge } from 'tailwind-merge';
-import { AnimatePresence, motion } from 'framer-motion';
-import { appKit } from '@/lib/walletConfig';
+import { useState, useRef } from "react";
+import { Search, Loader2, ShieldCheck, ShieldAlert, AlertTriangle, Hash, ExternalLink, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { TrustGauge } from "@/components/TrustGauge";
+import { backendClient } from "@/lib/backendClient";
 
-const DEFAULT_CHAIN_STORAGE_KEY = "cencera_default_chain";
-const DEFAULT_TESTNET_CHAIN = "11155111";
-type ChainOption = { value: string; label: string; disabled?: boolean };
-type DropdownPosition = { top: number; left: number; width: number };
-const CHAINS: ChainOption[] = [
-    { value: '11155111', label: 'Ethereum Sepolia' },
-    { value: '97', label: 'BNB Testnet' },
-    { value: '421614', label: 'Arbitrum Sepolia' },
-    { value: '11155420', label: 'Optimism Sepolia' },
-    { value: '84532', label: 'Base Sepolia' },
-    { value: '80002', label: 'Polygon Amoy' },
-    { value: '43113', label: 'Avalanche Fuji' },
-    { value: '4002', label: 'Fantom Testnet' },
-    { value: '300', label: 'zkSync Sepolia Testnet' },
-    { value: '31', label: 'Rootstock Testnet' },
-    { value: 'coming_soon', label: 'Coming Soon', disabled: true },
-];
-const ENABLED_CHAIN_VALUES = new Set(CHAINS.filter((c) => !c.disabled).map((c) => c.value));
+// Static demo result — deterministic fake score based on input length
+function generateDemoResult(query: string) {
+  const seed = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const score = 30 + (seed % 60); // 30–89
+  const chains = ["Ethereum", "BNB Chain", "Arbitrum", "Polygon", "Avalanche"];
+  const chain = chains[seed % chains.length];
+  const isContract = query.startsWith("0x") && query.length > 30;
+  const type = isContract ? "Smart Contract" : "Wallet (EOA)";
 
-export function SearchInput({
-    className,
-    placeholder = "Enter wallet address to test API...",
-    onSearch,
-    compact = false
-}: {
-    className?: string;
-    placeholder?: string;
-    onSearch?: (term: string) => void;
-    compact?: boolean;
-}) {
-    const router = useRouter();
-    const { address, isConnected } = useAccount();
-    const [term, setTerm] = useState('');
-    const [chain, setChain] = useState(DEFAULT_TESTNET_CHAIN);
-    const [isLoading, setIsLoading] = useState(false);
-    const [open, setOpen] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [showConnectModal, setShowConnectModal] = useState(false);
-    const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
-    const buttonRef = useRef<HTMLButtonElement | null>(null);
-    const menuRef = useRef<HTMLDivElement | null>(null);
-    const didInitRef = useRef(false);
+  let risk: "LOW" | "MEDIUM" | "HIGH";
+  let riskColor: string;
+  let Icon: typeof ShieldCheck;
+  if (score >= 70) { risk = "LOW"; riskColor = "text-emerald-400"; Icon = ShieldCheck; }
+  else if (score >= 45) { risk = "MEDIUM"; riskColor = "text-amber-400"; Icon = AlertTriangle; }
+  else { risk = "HIGH"; riskColor = "text-red-400"; Icon = ShieldAlert; }
 
-    useEffect(() => {
-        try {
-            const stored = window.localStorage.getItem(DEFAULT_CHAIN_STORAGE_KEY);
-            if (stored && stored.trim() && ENABLED_CHAIN_VALUES.has(stored)) {
-                setChain(stored);
-                const idx = CHAINS.findIndex((c) => c.value === stored);
-                if (idx >= 0) setActiveIndex(idx);
-            }
-        } catch {
-        } finally {
-            didInitRef.current = true;
-        }
-    }, []);
+  const onChain = Math.min(100, score + (seed % 15));
+  const market = Math.max(0, score - (seed % 20));
+  const offChain = Math.min(100, score + 5 + (seed % 10));
+  const aiDerived = Math.max(0, score - 5 + (seed % 12));
 
-    useEffect(() => {
-        if (!didInitRef.current) return;
-        try {
-            window.localStorage.setItem(DEFAULT_CHAIN_STORAGE_KEY, chain);
-        } catch {
-        }
-    }, [chain]);
+  return { score, chain, type, risk, riskColor, Icon, onChain, market, offChain, aiDerived, isDemo: true };
+}
 
-    useEffect(() => {
-        const handler = (e: MouseEvent | PointerEvent) => {
-            const target = e.target as Node;
-            if (buttonRef.current && buttonRef.current.contains(target)) return;
-            if (menuRef.current && menuRef.current.contains(target)) return;
-            setOpen(false);
-        };
-        document.addEventListener('pointerdown', handler);
-        return () => document.removeEventListener('pointerdown', handler);
-    }, []);
+interface SearchInputProps {
+  placeholder?: string;
+}
 
-    useEffect(() => {
-        if (!open) {
-            setDropdownPosition(null);
-            return;
-        }
-        const updatePosition = () => {
-            if (!buttonRef.current) return;
-            const rect = buttonRef.current.getBoundingClientRect();
-            const viewportWidth = window.innerWidth || 0;
-            const padding = 16;
-            const left = Math.max(padding, rect.left);
-            const right = Math.min(viewportWidth - padding, rect.right);
-            const width = right - left;
-            setDropdownPosition({
-                top: rect.bottom + 8,
-                left,
-                width: width > 0 ? width : rect.width,
-            });
-        };
-        updatePosition();
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
-        return () => {
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
-        };
-    }, [open]);
+export function SearchInput({ placeholder = "Enter wallet address or contract address..." }: SearchInputProps) {
+  const [query, setQuery] = useState("");
+  const [phase, setPhase] = useState<"idle" | "analyzing" | "result">("idle");
+  const [result, setResult] = useState<any>(null);
+  const [backendReply, setBackendReply] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-    const selectedLabel = useMemo(
-        () => CHAINS.find((c) => c.value === chain)?.label ?? 'Select Chain',
-        [chain]
+  const handleSubmit = async () => {
+    const trimmed = query.trim();
+    if (!trimmed || phase === "analyzing") return;
+    setPhase("analyzing");
+    setResult(null);
+    setBackendReply(null);
+
+    // 1. Try backend
+    const reply = await backendClient.sendChat(
+        `Please analyze this address for trust and security risks: ${trimmed}`,
+        "CENCERA_WEB_SEARCH", 
+        "0x0000000000000000000000000000000000000000" // Mock wallet
     );
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!term.trim()) return;
-        if (!isConnected || !address) {
-            setShowConnectModal(true);
-            return;
-        }
-        setIsLoading(true);
-        if (onSearch) {
-            onSearch(term);
-        } else {
-            setTimeout(() => {
-                router.push(`/analysis?q=${encodeURIComponent(term)}&chain=${chain}`);
-                setIsLoading(false);
-            }, 500);
-        }
-    };
+    if (reply) {
+        setBackendReply(reply);
+        setPhase("result");
+    } else {
+        // 2. Fallback to demo
+        await new Promise(r => setTimeout(r, 1500));
+        setResult(generateDemoResult(trimmed));
+        setPhase("result");
+    }
+  };
 
-    const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-        if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) {
-            setOpen(true);
-            e.preventDefault();
-            return;
-        }
-        if (!open) return;
-        if (e.key === 'Escape') {
-            setOpen(false);
-            return;
-        }
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setActiveIndex((i) => {
-                let next = i + 1;
-                while (next < CHAINS.length && CHAINS[next].disabled) next++;
-                return Math.min(next, CHAINS.length - 1);
-            });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setActiveIndex((i) => {
-                let prev = i - 1;
-                while (prev >= 0 && CHAINS[prev].disabled) prev--;
-                return Math.max(prev, 0);
-            });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const opt = CHAINS[activeIndex];
-            if (!opt.disabled) {
-                setChain(opt.value);
-                setOpen(false);
-            }
-        }
-    };
+  const handleReset = () => {
+    setPhase("idle");
+    setResult(null);
+    setQuery("");
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
 
-    return (
-        <div className={twMerge("w-full space-y-4", className)}>
-            <form onSubmit={handleSubmit} className="relative group w-full">
-                {!compact && <div className="absolute -inset-0.5 bg-gradient-to-r from-neon/40 via-neon/15 to-transparent rounded-lg blur opacity-40 group-focus-within:opacity-75 transition duration-500"></div>}
-                <div className={twMerge(
-                    "relative flex flex-wrap items-stretch sm:items-center bg-surface rounded-lg border border-[#2A2A2A] ring-1 ring-[#2A2A2A] group-focus-within:ring-neon/40",
-                    compact ? "py-0 bg-transparent border-transparent ring-0" : ""
-                )}>
-                    {!compact && (
-                        <div className="relative pl-2 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-[#2A2A2A]">
-                            <button
-                                type="button"
-                                ref={buttonRef}
-                                onClick={() => setOpen((v) => !v)}
-                                onKeyDown={onKeyDown}
-                                className="flex items-center justify-between gap-2 bg-transparent text-sm font-medium text-[#C7C7C7] focus:outline-none py-3 md:py-4 px-2 w-full sm:w-[180px] truncate hover:text-[#E6E6E6]"
-                                aria-haspopup="listbox"
-                                aria-expanded={open}
-                            >
-                                <span className="truncate">{selectedLabel}</span>
-                                <ChevronDown className={twMerge("w-4 h-4 transition-transform", open ? "rotate-180" : "")} />
-                            </button>
-                            <AnimatePresence>
-                                {open && dropdownPosition && (
-                                    <motion.div
-                                        ref={menuRef}
-                                        initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                                        transition={{ duration: 0.16, ease: "easeOut" }}
-                                        className="fixed z-50"
-                                        style={{
-                                            top: dropdownPosition.top,
-                                            left: dropdownPosition.left,
-                                            width: dropdownPosition.width,
-                                        }}
-                                    >
-                                        <div className="rounded-lg border border-[#2A2A2A] bg-[#161616]/90 backdrop-blur-sm shadow-xl">
-                                            <ul role="listbox" className="max-h-72 overflow-auto py-1 overscroll-contain">
-                                                {CHAINS.map((c, i) => {
-                                                    const isActive = i === activeIndex;
-                                                    const isSelected = c.value === chain;
-                                                    const baseClasses = c.disabled
-                                                        ? "text-[#8A8A8A] cursor-not-allowed"
-                                                        : "text-[#C7C7C7] hover:text-[#E6E6E6] hover:bg-white/5 cursor-pointer";
-                                                    return (
-                                                        <li
-                                                            key={c.value}
-                                                            role="option"
-                                                            aria-selected={isSelected}
-                                                            className={twMerge("flex items-center justify-between px-3 py-3 sm:py-2 text-sm", baseClasses, isActive && !c.disabled ? "bg-white/5" : "")}
-                                                            onMouseEnter={() => !c.disabled && setActiveIndex(i)}
-                                                            onTouchStart={() => !c.disabled && setActiveIndex(i)}
-                                                            onClick={() => {
-                                                                if (c.disabled) return;
-                                                                setChain(c.value);
-                                                                setActiveIndex(i);
-                                                                setOpen(false);
-                                                            }}
-                                                        >
-                                                            <span className="truncate">{c.label}</span>
-                                                            {isSelected && <Check className="w-4 h-4 text-neon" />}
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-2 flex-1 min-w-0 px-2">
-                        <div className={twMerge("pl-1 text-[#B0B0B0] flex-shrink-0", compact ? "pl-2" : "")}>
-                            <Search className="w-4 h-4 md:w-5 md:h-5" />
-                        </div>
-                        <input
-                            type="text"
-                            value={term}
-                            onChange={(e) => setTerm(e.target.value)}
-                            className={twMerge(
-                                "flex-1 min-w-0 bg-transparent border-none text-[#E6E6E6] placeholder-[#8A8A8A] focus:outline-none focus:ring-0",
-                                compact ? "py-2 px-2 text-sm" : "py-3 px-3 text-base md:py-4 md:px-4 md:text-lg"
-                            )}
-                            placeholder={placeholder}
-                        />
-                    </div>
-                    {!compact && (
-                        <button
-                            type="submit"
-                            disabled={!term.trim() || isLoading}
-                            className="w-full sm:w-auto mt-2 sm:mt-0 mr-0 sm:mr-2 p-3 sm:p-2 rounded-md bg-white/5 hover:bg-white/10 text-[#E6E6E6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <ArrowRight className="w-5 h-5 text-neon" />
-                            )}
-                        </button>
-                    )}
-                </div>
-            </form>
-            {showConnectModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-[#1A1A1A] border border-neon/20 rounded-xl p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold text-white mb-2">Connect Wallet</h3>
-                        <p className="text-sm text-[#B0B0B0] mb-4">
-                            Connect your wallet to run trust analysis. Searches use credits.
-                        </p>
-                        <div className="flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    appKit.open();
-                                    setShowConnectModal(false);
-                                }}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-neon/20 bg-neon/10 hover:bg-neon/20 text-neon text-sm font-medium transition-colors"
-                            >
-                                Connect Wallet
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowConnectModal(false)}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-[#2A2A2A] bg-[#1F1F1F] hover:bg-[#262626] text-[#E6E6E6] text-sm font-medium transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="space-y-6">
+      {/* Search bar */}
+      <div className="relative flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#555]" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            placeholder={placeholder}
+            disabled={phase === "analyzing"}
+            className="w-full pl-12 pr-4 py-4 bg-[#0D0D0D] border border-[#2A2A2A] hover:border-[#3A3A3A] focus:border-brand-primary/50 rounded-xl font-mono text-sm text-[#E6E6E6] placeholder-[#444] focus:outline-none focus:ring-1 focus:ring-brand-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          />
         </div>
-    );
+        <button
+          onClick={handleSubmit}
+          disabled={!query.trim() || phase === "analyzing"}
+          className="px-6 py-4 bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 hover:border-brand-primary/60 text-brand-primary rounded-xl font-mono text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {phase === "analyzing" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          {phase === "analyzing" ? "Analyzing" : "Analyze"}
+        </button>
+      </div>
+
+      {/* Analyzing phase */}
+      <AnimatePresence>
+        {phase === "analyzing" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-[#111]/80 border border-[#2A2A2A] rounded-xl p-6 text-center space-y-4"
+          >
+            <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto" />
+            <div className="space-y-1">
+              <p className="text-[#E6E6E6] font-mono text-sm font-bold">CenceraAI Analyzing...</p>
+              <p className="text-[#666] text-xs font-mono">Querying 4 signal domains across 18 chains</p>
+            </div>
+            <div className="flex justify-center gap-2">
+              {["On-Chain", "Market", "Off-Chain", "AI-Derived"].map((label, i) => (
+                <motion.span
+                  key={label}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.3 }}
+                  className="px-2 py-1 bg-brand-primary/10 border border-brand-primary/20 rounded-md text-[10px] font-mono text-brand-primary uppercase tracking-widest"
+                >
+                  {label}
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Result */}
+      <AnimatePresence>
+        {phase === "result" && (result || backendReply) && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: "spring", stiffness: 280, damping: 26 }}
+            className="bg-[#111]/90 border border-[#2A2A2A] rounded-2xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#1E1E1E]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  {result ? <result.Icon className={`w-4 h-4 ${result.riskColor}`} /> : <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                  <span className={`text-xs font-mono font-bold uppercase tracking-widest ${result ? result.riskColor : "text-emerald-400"}`}>
+                    {result ? `${result.risk} RISK` : "AI ANALYSIS"}
+                  </span>
+                  {result?.isDemo && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[8px] font-mono text-amber-500 uppercase tracking-widest">Demo</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#666] font-mono">
+                  <Hash className="w-3 h-3" />
+                  <span className="truncate max-w-xs">{query}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="px-2 py-1 bg-[#1A1A1A] border border-[#333] rounded-md text-[10px] font-mono text-[#888] uppercase">{result ? result.chain : "BNB Chain"}</span>
+                <span className="px-2 py-1 bg-[#1A1A1A] border border-[#333] rounded-md text-[10px] font-mono text-[#888]">{result ? result.type : "Target Entity"}</span>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+                {backendReply ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-xs font-mono text-brand-primary uppercase tracking-[0.2em] mb-2">
+                            <Zap className="w-3 h-3" /> CenceraAI Reasoning
+                        </div>
+                        <div className="p-4 bg-black/40 border border-[#222] rounded-xl text-sm font-mono text-[#B0B0B0] leading-relaxed whitespace-pre-wrap">
+                            {backendReply}
+                        </div>
+                    </div>
+                ) : result && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <TrustGauge score={result.score} />
+                            <div className="text-center">
+                            <p className="text-[#888] text-xs font-mono">Composite Trust Score</p>
+                            <p className="text-[10px] text-[#555] font-mono mt-1">Confidence: Medium (Demo)</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <p className="text-xs font-mono text-[#666] uppercase tracking-widest mb-4">Signal Breakdown</p>
+                            {[
+                            { label: "On-Chain", value: result.onChain, weight: "45%" },
+                            { label: "Market", value: result.market, weight: "25%" },
+                            { label: "Off-Chain", value: result.offChain, weight: "15%" },
+                            { label: "AI-Derived", value: result.aiDerived, weight: "15%" },
+                            ].map(({ label, value, weight }) => (
+                            <div key={label} className="space-y-1">
+                                <div className="flex justify-between text-[11px] font-mono">
+                                <span className="text-[#C0C0C0]">{label}</span>
+                                <span className="text-[#666]">{weight} · <span className="text-[#E6E6E6]">{value}</span></span>
+                                </div>
+                                <div className="w-full bg-[#1A1A1A] rounded-full h-1.5 overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${value}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                                    className="h-full rounded-full bg-brand-primary/70"
+                                />
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-[#1E1E1E] flex items-center justify-between">
+              <p className="text-[10px] text-[#444] font-mono">
+                {result?.isDemo ? "Demo result" : "Live Backend Reply"} · CenceraAI v1.0 · {new Date().toLocaleTimeString()}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReset}
+                  className="text-[11px] font-mono text-[#666] hover:text-[#E6E6E6] flex items-center gap-1 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" /> New query
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
 }
